@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
 
@@ -34,4 +34,9 @@ def create_app(config_class=Config):
     app.register_blueprint(planificacion_api_bp)
     app.register_blueprint(asistencia_api_bp)
 
+    @app.route('/')
+    def root():
+        return redirect(url_for('auth.login'))
+
     return app
+

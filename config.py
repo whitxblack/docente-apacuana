@@ -16,8 +16,11 @@ class Config:
         SQLALCHEMY_DATABASE_URI = _database_url
     else:
         # Fallback a la BD local de gestor-apacuana (SQLite) si no hay URL
-        GESTOR_DIR = BASE_DIR.parent / 'gestor-apacuana'
-        SQLALCHEMY_DATABASE_URI = f"sqlite:///{GESTOR_DIR / 'db.sqlite3'}"
+        if os.environ.get('VERCEL'):
+            SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/db.sqlite3'
+        else:
+            GESTOR_DIR = BASE_DIR.parent / 'gestor-apacuana'
+            SQLALCHEMY_DATABASE_URI = f"sqlite:///{GESTOR_DIR / 'db.sqlite3'}"
         
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     

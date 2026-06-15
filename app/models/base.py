@@ -47,4 +47,4 @@ def init_models():
     MaterialApoyo = Base.classes.get('docentes_materialapoyo')
     TareaDocente = Base.classes.get('docentes_tareadocente')
     PeriodoCierre = Base.classes.get('docentes_periodocierre')
-    RegistroAsistencia = Base.classes.get('asistencias_registroasistencia')
+    RegistroAsistencia = Base.classes.get('docentes_registroasistencia')

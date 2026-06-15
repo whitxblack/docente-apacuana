@@ -163,7 +163,7 @@
           </div>
         </div>
         
-        <button onclick="guardarAsistencia()"
+        <button onclick="guardarAsistencia(this)"
                 class="flex items-center gap-2 bg-primary hover:bg-emerald-600 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg w-full md:w-auto justify-center">
           <ion-icon name="save" class="text-lg"></ion-icon> Guardar Registro
         </button>
@@ -610,7 +610,7 @@ function actualizarContadores() {
 }
 
 // ── Guardar ──────────────────────────────────────────────────────────────────
-async function guardarAsistencia() {
+async function guardarAsistencia(btn) {
   const fecha = document.getElementById('fecha-asistencia').value;
   if (!fecha) { toast('Selecciona una fecha.', false); return; }
 
@@ -627,10 +627,14 @@ async function guardarAsistencia() {
     });
   });
 
-  const btn = event.currentTarget;
-  const originalHtml = btn.innerHTML;
-  btn.innerHTML = `<ion-icon name="sync" class="text-lg animate-spin"></ion-icon> Guardando...`;
-  btn.disabled = true;
+  if (!btn) {
+    btn = (window.event && window.event.currentTarget) || document.querySelector('button[onclick*="guardarAsistencia"]');
+  }
+  const originalHtml = btn ? btn.innerHTML : 'Guardar Registro';
+  if (btn) {
+    btn.innerHTML = `<ion-icon name="sync" class="text-lg animate-spin"></ion-icon> Guardando...`;
+    btn.disabled = true;
+  }
 
   try {
     const res = await fetch('/docente/api/asistencia/registrar/', {
@@ -648,10 +652,13 @@ async function guardarAsistencia() {
       toast(d.error || 'Error al guardar.', false);
     }
   } catch(e) {
+    console.error('Save attendance error:', e);
     toast('Error de conexión.', false);
   } finally {
-    btn.innerHTML = originalHtml;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
   }
 }
 

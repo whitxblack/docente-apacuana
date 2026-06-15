@@ -52,6 +52,7 @@ def registrar():
             existente.observacion = observacion
             existente.hora_llegada = hora_llegada
             existente.registrado_por_id = docente_id
+            existente.hora_registro = datetime.now()
         else:
             reg = RegistroAsistencia(
                 estudiante_id=est_id,
@@ -63,7 +64,8 @@ def registrar():
                 observacion=observacion,
                 hora_llegada=hora_llegada,
                 metodo='MANUAL',
-                registrado_por_id=docente_id
+                registrado_por_id=docente_id,
+                hora_registro=datetime.now()
             )
             db.session.add(reg)
         guardados += 1

@@ -193,52 +193,42 @@
         font-size: var(--density-font-size) !important;
       }
 
-      /* Header and mobile bottom nav dynamic colors override */
-      #main-header {
-        background-color: var(--navbar-bg, var(--color-surface)) !important;
-        border-color: var(--navbar-border, var(--color-border)) !important;
-      }
-      #main-header, #main-header * {
+      /* Header and mobile bottom nav transitions (always active for smooth theme toggling) */
+      #main-header, #main-header *, #mobile-bottom-nav, #mobile-bottom-nav * {
         transition: background-color var(--transition-base, 200ms), color var(--transition-fast, 150ms), border-color var(--transition-fast, 150ms);
       }
-      #main-header .text-text-main, 
-      #main-header span.text-text-main,
-      #main-header span.font-headline,
-      #main-header p.text-text-main {
-        color: var(--navbar-text, var(--color-text-main)) !important;
-      }
-      #main-header .text-text-muted,
-      #main-header p.text-text-muted,
-      #main-header ion-icon {
-        color: var(--navbar-text-muted, var(--color-text-muted)) !important;
-      }
-      #main-header .border-border {
-        border-color: var(--navbar-border, var(--color-border)) !important;
-      }
-      #main-header nav {
-        background-color: var(--navbar-element-bg, var(--color-surface-element)) !important;
-        border-color: var(--navbar-border, var(--color-border)) !important;
-      }
-      #main-header nav a.text-text-muted {
-        color: var(--navbar-text-muted, var(--color-text-muted)) !important;
-      }
-      #main-header nav a.text-text-muted:hover {
-        color: var(--navbar-text, var(--color-text-main)) !important;
-        background-color: var(--navbar-element-hover, rgba(0, 0, 0, 0.05)) !important;
-      }
-      
-      /* Mobile bottom nav */
-      #mobile-bottom-nav {
-        background-color: var(--navbar-bg, var(--color-surface)) !important;
-        border-color: var(--navbar-border, var(--color-border)) !important;
-        transition: background-color var(--transition-base, 200ms), border-color var(--transition-fast, 150ms);
-      }
-      #mobile-bottom-nav a {
-        color: var(--navbar-text-muted, var(--color-text-muted)) !important;
-        transition: color var(--transition-fast, 150ms);
-      }
-      #mobile-bottom-nav a.text-primary {
-        color: var(--color-accent, #10B981) !important;
+
+      /* Header dynamic colors override (Desktop only) */
+      @media (min-width: 769px) {
+        #main-header {
+          background-color: var(--navbar-bg, var(--color-surface)) !important;
+          border-color: var(--navbar-border, var(--color-border)) !important;
+        }
+        #main-header .text-text-main, 
+        #main-header span.text-text-main,
+        #main-header span.font-headline,
+        #main-header p.text-text-main {
+          color: var(--navbar-text, var(--color-text-main)) !important;
+        }
+        #main-header .text-text-muted,
+        #main-header p.text-text-muted,
+        #main-header ion-icon {
+          color: var(--navbar-text-muted, var(--color-text-muted)) !important;
+        }
+        #main-header .border-border {
+          border-color: var(--navbar-border, var(--color-border)) !important;
+        }
+        #main-header nav {
+          background-color: var(--navbar-element-bg, var(--color-surface-element)) !important;
+          border-color: var(--navbar-border, var(--color-border)) !important;
+        }
+        #main-header nav a.text-text-muted {
+          color: var(--navbar-text-muted, var(--color-text-muted)) !important;
+        }
+        #main-header nav a.text-text-muted:hover {
+          color: var(--navbar-text, var(--color-text-main)) !important;
+          background-color: var(--navbar-element-hover, rgba(0, 0, 0, 0.05)) !important;
+        }
       }
 
       /* ─── Customize Panel Drawer ─── */
@@ -583,7 +573,7 @@
             </div>
 
             <!-- Sidebar/Bar Color -->
-            <div class="customize-section">
+            <div class="customize-section hidden md:block">
                 <div class="customize-section-title">Color de la barra</div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap">
                     <div class="color-swatch sidebar-color-swatch" data-sidebar-color="#FFFFFF" style="background:#FFFFFF"

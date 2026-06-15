@@ -2,196 +2,234 @@
 {% block title %}Registro de Asistencia{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-5">
+<div class="max-w-7xl mx-auto space-y-6">
 
-  <!-- Título -->
-  <div>
-    <h2 class="font-headline font-extrabold text-xl text-text-main flex items-center gap-2">
-      <ion-icon name="people-outline" class="text-tertiary"></ion-icon>
-      Registro de Asistencia
-    </h2>
-    <p class="text-sm text-text-muted mt-1">Pasa asistencia a tus estudiantes por fecha y materia.</p>
+  <!-- Header Section -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h2 class="font-headline font-extrabold text-2xl text-text-main flex items-center gap-2">
+        <ion-icon name="people" class="text-primary"></ion-icon>
+        Asistencia Escolar
+      </h2>
+      <p class="text-sm text-text-muted mt-1">Control de asistencia, historial y métricas por materia.</p>
+    </div>
   </div>
 
-  <!-- ── Selector en cascada (3 pasos) ─────────────────────────────────── -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-    <!-- 1 · Período -->
-    <div class="bg-surface-container/60 border border-border rounded-2xl p-4">
-      <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">1 · Período Escolar</label>
-      <select id="sel-periodo" onchange="onPeriodoChange()"
-              class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-tertiary/50 focus:ring-1 focus:ring-tertiary/40 transition-all">
-        <option value="">— Selecciona —</option>
-        {% for p in periodos %}
-        <option value="{{ p.id }}">{{ p.nombre }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <!-- 2 · Año y Sección -->
-    <div class="bg-surface-container/60 border border-border rounded-2xl p-4 opacity-40 transition-all" id="card-combo">
-      <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">2 · Año y Sección</label>
-      <select id="sel-combo" onchange="onComboChange()" disabled
-              class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-tertiary/50 focus:ring-1 focus:ring-tertiary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-        <option value="">— Elige el período primero —</option>
-      </select>
-    </div>
-
-    <!-- 3 · Materia -->
-    <div class="bg-surface-container/60 border border-border rounded-2xl p-4 opacity-40 transition-all" id="card-materia">
-      <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">3 · Materia</label>
-      <select id="sel-materia" onchange="cargarAsistencia()" disabled
-              class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-tertiary/50 focus:ring-1 focus:ring-tertiary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-        <option value="">— Completa los pasos anteriores —</option>
-      </select>
-    </div>
-
-  </div>
-
-  <!-- ── Panel Principal ────────────────────────────────────────────────── -->
-  <div id="panel-principal" class="hidden space-y-5">
-
-    <!-- Barra superior con fecha y tabs -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h3 id="titulo-tabla" class="font-headline font-bold text-base text-text-main"></h3>
-        <p id="sub-tabla" class="text-xs text-text-muted mt-0.5"></p>
+  <!-- ── Filtro Superior (Selector de Clase) ─────────────────────────────── -->
+  <div class="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <!-- 1 · Período -->
+      <div class="relative">
+        <label class="block text-xs font-bold text-text-muted mb-2">1. Período Escolar</label>
+        <div class="relative">
+          <select id="sel-periodo" onchange="onPeriodoChange()"
+                  class="w-full bg-surface-element border border-border rounded-xl py-3 px-4 text-sm font-semibold text-text-main appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+            <option value="">— Selecciona Período —</option>
+            {% for p in periodos %}
+            <option value="{{ p.id }}">{{ p.nombre }}</option>
+            {% endfor %}
+          </select>
+          <ion-icon name="chevron-down-outline" class="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"></ion-icon>
+        </div>
       </div>
-      <div class="flex gap-2">
+
+      <!-- 2 · Año y Sección -->
+      <div class="relative opacity-50 transition-all duration-300" id="card-combo">
+        <label class="block text-xs font-bold text-text-muted mb-2">2. Año y Sección</label>
+        <div class="relative">
+          <select id="sel-combo" onchange="onComboChange()" disabled
+                  class="w-full bg-surface-element border border-border rounded-xl py-3 px-4 text-sm font-semibold text-text-main appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all disabled:cursor-not-allowed">
+            <option value="">— Esperando período —</option>
+          </select>
+          <ion-icon name="chevron-down-outline" class="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"></ion-icon>
+        </div>
+      </div>
+
+      <!-- 3 · Materia -->
+      <div class="relative opacity-50 transition-all duration-300" id="card-materia">
+        <label class="block text-xs font-bold text-text-muted mb-2">3. Asignatura</label>
+        <div class="relative">
+          <select id="sel-materia" onchange="cargarAsistencia()" disabled
+                  class="w-full bg-surface-element border border-border rounded-xl py-3 px-4 text-sm font-semibold text-text-main appearance-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all disabled:cursor-not-allowed">
+            <option value="">— Esperando sección —</option>
+          </select>
+          <ion-icon name="chevron-down-outline" class="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"></ion-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel Principal (Oculto al inicio) ─────────────────────────────── -->
+  <div id="panel-principal" class="hidden space-y-6">
+
+    <!-- Encabezado de la Clase y Tabs -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-surface border border-border rounded-2xl p-4 shadow-sm">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+          <ion-icon name="book-outline" class="text-primary text-2xl"></ion-icon>
+        </div>
+        <div>
+          <h3 id="titulo-tabla" class="font-headline font-bold text-lg text-text-main leading-tight"></h3>
+          <p id="sub-tabla" class="text-sm text-text-muted font-medium"></p>
+        </div>
+      </div>
+      
+      <div class="flex bg-surface-element p-1 rounded-xl border border-border">
         <button id="tab-pasar" onclick="cambiarTab('pasar')"
-                class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all bg-tertiary/10 text-tertiary border-tertiary/20">
-          <ion-icon name="checkbox-outline" class="text-sm mr-1"></ion-icon> Pasar Lista
+                class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-text-main shadow-sm border border-border">
+          Pasar Lista
         </button>
         <button id="tab-historial" onclick="cambiarTab('historial')"
-                class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-text-muted border-border hover:bg-surface-element">
-          <ion-icon name="time-outline" class="text-sm mr-1"></ion-icon> Historial
+                class="px-4 py-2 rounded-lg text-sm font-semibold transition-all text-text-muted hover:text-text-main border border-transparent">
+          Historial
         </button>
         <button id="tab-stats" onclick="cambiarTab('stats')"
-                class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-text-muted border-border hover:bg-surface-element">
-          <ion-icon name="stats-chart-outline" class="text-sm mr-1"></ion-icon> Estadísticas
+                class="px-4 py-2 rounded-lg text-sm font-semibold transition-all text-text-muted hover:text-text-main border border-transparent">
+          Estadísticas
         </button>
       </div>
     </div>
 
     <!-- ═════════ TAB: PASAR LISTA ═════════ -->
     <div id="vista-pasar" class="space-y-4">
-      <!-- Selector de fecha -->
-      <div class="flex flex-wrap items-center gap-4">
-        <div class="bg-surface-container/60 border border-border rounded-xl p-3 flex items-center gap-3">
-          <ion-icon name="calendar-outline" class="text-tertiary text-lg"></ion-icon>
-          <input type="date" id="fecha-asistencia" onchange="cargarRegistrosFecha()"
-                 class="bg-transparent border-none text-sm text-text-main focus:outline-none focus:ring-0 [color-scheme:dark]"/>
+      
+      <!-- Toolbar de Acciones -->
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="bg-surface border border-border rounded-xl p-2.5 flex items-center gap-2 shadow-sm">
+            <ion-icon name="calendar-clear" class="text-primary text-lg ml-1"></ion-icon>
+            <input type="date" id="fecha-asistencia" onchange="cargarRegistrosFecha()"
+                   class="bg-transparent border-none text-sm font-bold text-text-main focus:outline-none focus:ring-0 p-0 cursor-pointer"/>
+          </div>
         </div>
-        <button onclick="marcarTodos('PRESENTE')"
-                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 transition-all">
-          <ion-icon name="checkmark-done-outline"></ion-icon> Todos Presentes
-        </button>
-        <button onclick="marcarTodos('AUSENTE')"
-                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-error/10 text-error border border-error/20 hover:bg-error/20 transition-all">
-          <ion-icon name="close-outline"></ion-icon> Todos Ausentes
-        </button>
+        
+        <div class="flex items-center gap-2">
+          <button onclick="marcarTodos('PRESENTE')"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#E6F4EA] text-[#137333] border border-[#CEEAD6] hover:bg-[#CEEAD6] transition-colors">
+            <ion-icon name="checkmark-done" class="text-base"></ion-icon> Marcar Todos Presentes
+          </button>
+          <button onclick="marcarTodos('AUSENTE')"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#FCE8E6] text-[#C5221F] border border-[#FAD2CF] hover:bg-[#FAD2CF] transition-colors">
+            <ion-icon name="close" class="text-base"></ion-icon> Marcar Todos Ausentes
+          </button>
+        </div>
       </div>
 
-      <!-- Tabla de asistencia -->
-      <div class="bg-surface-container/60 border border-border rounded-2xl overflow-hidden shadow-md">
+      <!-- Tabla de Asistencia -->
+      <div class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto custom-scrollbar">
           <table class="w-full text-left border-collapse" id="tabla-asistencia">
             <thead>
-              <tr class="bg-surface-element/50 border-b border-border text-[10px] uppercase tracking-wider text-text-muted">
-                <th class="px-4 py-3 min-w-[200px]">Estudiante</th>
-                <th class="px-4 py-3 text-center w-28">Estado</th>
-                <th class="px-4 py-3 text-center w-24">Hora</th>
-                <th class="px-4 py-3 w-60">Observación</th>
+              <tr class="bg-surface-element border-b border-border text-xs font-bold text-text-muted uppercase tracking-wider">
+                <th class="px-5 py-4 min-w-[220px]">Estudiante</th>
+                <th class="px-5 py-4 text-center w-40">Estado</th>
+                <th class="px-5 py-4 text-center w-32">Hora Llegada</th>
+                <th class="px-5 py-4 min-w-[200px]">Notas / Observación</th>
               </tr>
             </thead>
-            <tbody id="tbody-asistencia" class="divide-y divide-white/5 text-sm">
+            <tbody id="tbody-asistencia" class="divide-y divide-border text-sm">
               <!-- Inyectado por JS -->
             </tbody>
           </table>
         </div>
 
-        <div id="estado-vacio-asist" class="hidden py-16 text-center">
-          <ion-icon name="people-outline" class="text-5xl text-text-muted/30 block mx-auto mb-3"></ion-icon>
-          <p class="text-text-muted text-sm">No hay estudiantes en esta sección.</p>
+        <div id="estado-vacio-asist" class="hidden py-20 text-center">
+          <ion-icon name="people" class="text-6xl text-border block mx-auto mb-4"></ion-icon>
+          <p class="text-text-muted font-medium text-lg">No se encontraron estudiantes registrados en esta sección.</p>
         </div>
       </div>
 
-      <!-- Resumen rápido + Guardar -->
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex gap-4">
-          <span class="flex items-center gap-1.5 text-xs font-bold text-secondary">
-            <span class="w-3 h-3 rounded-full bg-secondary inline-block"></span>
-            Presentes: <span id="cnt-presentes">0</span>
-          </span>
-          <span class="flex items-center gap-1.5 text-xs font-bold text-error">
-            <span class="w-3 h-3 rounded-full bg-error inline-block"></span>
-            Ausentes: <span id="cnt-ausentes">0</span>
-          </span>
-          <span class="flex items-center gap-1.5 text-xs font-bold text-tertiary">
-            <span class="w-3 h-3 rounded-full bg-tertiary inline-block"></span>
-            Retardos: <span id="cnt-retardos">0</span>
-          </span>
-          <span class="flex items-center gap-1.5 text-xs font-bold text-primary">
-            <span class="w-3 h-3 rounded-full bg-primary inline-block"></span>
-            Justificados: <span id="cnt-justificados">0</span>
-          </span>
+      <!-- Resumen y Guardar -->
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-surface p-4 rounded-2xl border border-border shadow-sm">
+        <div class="flex flex-wrap gap-4 px-2">
+          <div class="flex flex-col">
+            <span class="text-[10px] uppercase font-bold text-text-muted">Presentes</span>
+            <span class="text-lg font-black text-[#137333]" id="cnt-presentes">0</span>
+          </div>
+          <div class="w-px h-8 bg-border"></div>
+          <div class="flex flex-col">
+            <span class="text-[10px] uppercase font-bold text-text-muted">Ausentes</span>
+            <span class="text-lg font-black text-[#C5221F]" id="cnt-ausentes">0</span>
+          </div>
+          <div class="w-px h-8 bg-border"></div>
+          <div class="flex flex-col">
+            <span class="text-[10px] uppercase font-bold text-text-muted">Retardos</span>
+            <span class="text-lg font-black text-[#B06000]" id="cnt-retardos">0</span>
+          </div>
+          <div class="w-px h-8 bg-border"></div>
+          <div class="flex flex-col">
+            <span class="text-[10px] uppercase font-bold text-text-muted">Justificados</span>
+            <span class="text-lg font-black text-[#1967D2]" id="cnt-justificados">0</span>
+          </div>
         </div>
+        
         <button onclick="guardarAsistencia()"
-                class="flex items-center gap-2 bg-tertiary hover:bg-tertiary/80 text-background px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg">
-          <ion-icon name="save-outline" class="text-base"></ion-icon> Guardar Asistencia
+                class="flex items-center gap-2 bg-primary hover:bg-emerald-600 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg w-full md:w-auto justify-center">
+          <ion-icon name="save" class="text-lg"></ion-icon> Guardar Registro
         </button>
       </div>
     </div>
 
     <!-- ═════════ TAB: HISTORIAL ═════════ -->
     <div id="vista-historial" class="hidden space-y-4">
-      <div class="bg-surface-container/60 border border-border rounded-2xl overflow-hidden shadow-md">
+      <div class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto custom-scrollbar">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-surface-element/50 border-b border-border text-[10px] uppercase tracking-wider text-text-muted">
-                <th class="px-4 py-3">Fecha</th>
-                <th class="px-4 py-3 text-center">Presentes</th>
-                <th class="px-4 py-3 text-center">Ausentes</th>
-                <th class="px-4 py-3 text-center">Retardos</th>
-                <th class="px-4 py-3 text-center">Justificados</th>
-                <th class="px-4 py-3 text-center">Total</th>
-                <th class="px-4 py-3 text-center">Acciones</th>
+              <tr class="bg-surface-element border-b border-border text-xs font-bold text-text-muted uppercase tracking-wider">
+                <th class="px-5 py-4">Fecha</th>
+                <th class="px-5 py-4 text-center">Presentes</th>
+                <th class="px-5 py-4 text-center">Ausentes</th>
+                <th class="px-5 py-4 text-center">Retardos</th>
+                <th class="px-5 py-4 text-center">Justif.</th>
+                <th class="px-5 py-4 text-center">Total</th>
+                <th class="px-5 py-4 text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody id="tbody-historial" class="divide-y divide-white/5 text-sm">
+            <tbody id="tbody-historial" class="divide-y divide-border text-sm">
               <!-- Inyectado por JS -->
             </tbody>
           </table>
         </div>
-        <div id="estado-vacio-hist" class="hidden py-16 text-center">
-          <ion-icon name="time-outline" class="text-5xl text-text-muted/30 block mx-auto mb-3"></ion-icon>
-          <p class="text-text-muted text-sm">Aún no se ha registrado asistencia.</p>
+        <div id="estado-vacio-hist" class="hidden py-20 text-center">
+          <ion-icon name="time" class="text-6xl text-border block mx-auto mb-4"></ion-icon>
+          <p class="text-text-muted font-medium text-lg">Aún no se ha registrado asistencia en esta materia.</p>
         </div>
       </div>
     </div>
 
     <!-- ═════════ TAB: ESTADÍSTICAS ═════════ -->
     <div id="vista-stats" class="hidden space-y-4">
-      <div class="bg-surface-container/60 border border-border rounded-xl px-4 py-2.5 flex items-center gap-3">
-        <ion-icon name="analytics-outline" class="text-primary text-lg"></ion-icon>
-        <span class="text-xs text-text-muted">Total de clases registradas:</span>
-        <span id="total-clases-stats" class="text-sm font-bold text-primary">0</span>
+      <div class="bg-surface border border-border rounded-2xl p-5 shadow-sm flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <ion-icon name="analytics" class="text-primary text-xl"></ion-icon>
+          </div>
+          <div>
+            <h4 class="font-bold text-text-main">Métricas Generales</h4>
+            <p class="text-xs text-text-muted">Resumen del período actual</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-text-muted font-bold uppercase tracking-wide">Clases Registradas</span>
+          <p class="text-2xl font-black text-primary" id="total-clases-stats">0</p>
+        </div>
       </div>
-      <div class="bg-surface-container/60 border border-border rounded-2xl overflow-hidden shadow-md">
+
+      <div class="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto custom-scrollbar">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-surface-element/50 border-b border-border text-[10px] uppercase tracking-wider text-text-muted">
-                <th class="px-4 py-3 min-w-[200px]">Estudiante</th>
-                <th class="px-4 py-3 text-center">Presentes</th>
-                <th class="px-4 py-3 text-center">Ausentes</th>
-                <th class="px-4 py-3 text-center">Retardos</th>
-                <th class="px-4 py-3 text-center">Justificados</th>
-                <th class="px-4 py-3 text-center">% Asistencia</th>
+              <tr class="bg-surface-element border-b border-border text-xs font-bold text-text-muted uppercase tracking-wider">
+                <th class="px-5 py-4 min-w-[220px]">Estudiante</th>
+                <th class="px-5 py-4 text-center">Presentes</th>
+                <th class="px-5 py-4 text-center">Ausentes</th>
+                <th class="px-5 py-4 text-center">Retardos</th>
+                <th class="px-5 py-4 text-center">Justif.</th>
+                <th class="px-5 py-4 text-center min-w-[150px]">% Asistencia</th>
               </tr>
             </thead>
-            <tbody id="tbody-stats" class="divide-y divide-white/5 text-sm">
+            <tbody id="tbody-stats" class="divide-y divide-border text-sm">
               <!-- Inyectado por JS -->
             </tbody>
           </table>
@@ -201,9 +239,10 @@
   </div>
 
   <!-- Estado inicial -->
-  <div id="estado-inicial" class="py-20 text-center">
-    <ion-icon name="people-circle-outline" class="text-6xl text-tertiary/20 block mx-auto mb-4"></ion-icon>
-    <p class="text-text-muted">Selecciona un período, sección y materia para comenzar.</p>
+  <div id="estado-inicial" class="py-24 text-center bg-surface border border-border border-dashed rounded-3xl mt-4">
+    <ion-icon name="funnel" class="text-6xl text-border block mx-auto mb-4"></ion-icon>
+    <h3 class="text-xl font-bold text-text-main mb-1">Selecciona una clase</h3>
+    <p class="text-text-muted font-medium max-w-md mx-auto">Utiliza el filtro superior para elegir el período, la sección y la materia a la que deseas registrar la asistencia.</p>
   </div>
 </div>
 {% endblock %}
@@ -214,13 +253,22 @@ let _periodoId = null, _anoGrado = null, _seccion = null, _asignaturaId = null;
 let _estudiantes = [];
 
 function habilitarCard(id) {
-  document.getElementById(id).classList.remove('opacity-40');
+  document.getElementById(id).classList.remove('opacity-50');
+  document.getElementById(id).querySelector('select').disabled = false;
 }
+function deshabilitarCard(id, msg) {
+  const card = document.getElementById(id);
+  card.classList.add('opacity-50');
+  const sel = card.querySelector('select');
+  sel.disabled = true;
+  sel.innerHTML = `<option value="">${msg}</option>`;
+}
+
 function toast(msg, ok=true) {
   const t = document.createElement('div');
-  t.className = `fixed bottom-6 right-6 z-[99999] flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold transition-all
-    ${ok ? 'bg-secondary/10 border border-secondary/20 text-secondary' : 'bg-error/10 border border-error/20 text-error'}`;
-  t.innerHTML = `<ion-icon name="${ok?'checkmark-circle':'alert-circle'}-outline" class="text-base"></ion-icon>${msg}`;
+  t.className = `fixed bottom-6 right-6 z-[99999] flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl text-sm font-bold transition-all
+    ${ok ? 'bg-white border border-[#CEEAD6] text-[#137333]' : 'bg-white border border-[#FAD2CF] text-[#C5221F]'}`;
+  t.innerHTML = `<ion-icon name="${ok?'checkmark-circle':'alert-circle'}" class="text-xl"></ion-icon>${msg}`;
   document.body.appendChild(t);
   setTimeout(()=>t.remove(), 3500);
 }
@@ -231,9 +279,9 @@ function cambiarTab(tab) {
     document.getElementById(`vista-${t}`).classList.toggle('hidden', t !== tab);
     const btn = document.getElementById(`tab-${t}`);
     if (t === tab) {
-      btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition-all bg-tertiary/10 text-tertiary border-tertiary/20';
+      btn.className = 'px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-text-main shadow-sm border border-border';
     } else {
-      btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-text-muted border-border hover:bg-surface-element';
+      btn.className = 'px-4 py-2 rounded-lg text-sm font-semibold transition-all text-text-muted hover:text-text-main border border-transparent';
     }
   });
   
@@ -241,50 +289,39 @@ function cambiarTab(tab) {
   if (tab === 'stats') cargarEstadisticas();
 }
 
-// ── Cascada de selectores (reutiliza las mismas APIs que calificaciones) ──
+// ── Cascada de selectores ──
 async function onPeriodoChange() {
   _periodoId = document.getElementById('sel-periodo').value;
-  const selCombo = document.getElementById('sel-combo');
-  const selMat   = document.getElementById('sel-materia');
-
-  selCombo.innerHTML = '<option value="">Cargando...</option>';
-  selCombo.disabled = true;
-  selMat.innerHTML = '<option value="">— Completa los pasos anteriores —</option>';
-  selMat.disabled = true;
+  deshabilitarCard('card-combo', '— Cargando... —');
+  deshabilitarCard('card-materia', '— Esperando sección —');
   document.getElementById('panel-principal').classList.add('hidden');
   document.getElementById('estado-inicial').classList.remove('hidden');
-  ['card-combo','card-materia'].forEach(id => document.getElementById(id).classList.add('opacity-40'));
   _anoGrado = null; _seccion = null; _asignaturaId = null;
 
-  if (!_periodoId) { selCombo.innerHTML = '<option value="">— Elige el período primero —</option>'; return; }
+  if (!_periodoId) { deshabilitarCard('card-combo', '— Esperando período —'); return; }
 
   const r = await fetch(`/docente/api/combinaciones/?periodo_id=${_periodoId}`);
   const d = await r.json();
   const combos = d.combinaciones || [];
 
   if (!combos.length) {
-    selCombo.innerHTML = '<option value="">— Sin asignaciones en este período —</option>';
-    habilitarCard('card-combo');
+    deshabilitarCard('card-combo', '— Sin secciones —');
     return;
   }
 
+  const selCombo = document.getElementById('sel-combo');
   selCombo.innerHTML = '<option value="">— Selecciona Año y Sección —</option>';
   combos.forEach(c => {
     selCombo.innerHTML += `<option value="${c.valor}" data-ano="${c.ano_grado}" data-sec="${c.seccion}">${c.label}</option>`;
   });
-  selCombo.disabled = false;
   habilitarCard('card-combo');
 }
 
 async function onComboChange() {
   const opt = document.getElementById('sel-combo').selectedOptions[0];
-  const selMat = document.getElementById('sel-materia');
-
-  selMat.innerHTML = '<option value="">Cargando materias...</option>';
-  selMat.disabled = true;
+  deshabilitarCard('card-materia', '— Cargando materias... —');
   document.getElementById('panel-principal').classList.add('hidden');
   document.getElementById('estado-inicial').classList.remove('hidden');
-  document.getElementById('card-materia').classList.add('opacity-40');
   _asignaturaId = null;
 
   if (!opt || !opt.value) { _anoGrado = null; _seccion = null; return; }
@@ -297,14 +334,13 @@ async function onComboChange() {
   const materias = d.materias || [];
 
   if (!materias.length) {
-    selMat.innerHTML = '<option value="">— Sin materias asignadas —</option>';
-    habilitarCard('card-materia');
+    deshabilitarCard('card-materia', '— Sin materias —');
     return;
   }
 
-  selMat.innerHTML = '<option value="">— Selecciona materia —</option>';
+  const selMat = document.getElementById('sel-materia');
+  selMat.innerHTML = '<option value="">— Selecciona Asignatura —</option>';
   materias.forEach(m => { selMat.innerHTML += `<option value="${m.id}">${m.nombre}</option>`; });
-  selMat.disabled = false;
   habilitarCard('card-materia');
 }
 
@@ -314,7 +350,7 @@ async function cargarAsistencia() {
 
   const matNombre = document.getElementById('sel-materia').selectedOptions[0].text;
   document.getElementById('titulo-tabla').textContent = matNombre;
-  document.getElementById('sub-tabla').textContent = `Año ${_anoGrado} · Sección ${_seccion} · Período ${document.getElementById('sel-periodo').selectedOptions[0].text}`;
+  document.getElementById('sub-tabla').textContent = `Año ${_anoGrado} - Sección "${_seccion}"`;
 
   // Setear fecha de hoy por defecto
   const hoy = new Date().toISOString().split('T')[0];
@@ -339,32 +375,45 @@ function renderTablaAsistencia() {
 
   if (_estudiantes.length === 0) {
     document.getElementById('estado-vacio-asist').classList.remove('hidden');
+    document.getElementById('tabla-asistencia').classList.add('hidden');
     return;
   }
   document.getElementById('estado-vacio-asist').classList.add('hidden');
+  document.getElementById('tabla-asistencia').classList.remove('hidden');
 
   _estudiantes.forEach(est => {
     tbody.innerHTML += `
-      <tr class="hover:bg-white/3 transition-colors" data-est="${est.estudiante_id}">
-        <td class="px-4 py-2.5 font-semibold text-text-main text-xs">
-          ${est.nombre}<br><span class="text-text-muted font-normal font-mono">V-${est.cedula}</span>
+      <tr class="hover:bg-surface-element transition-colors group" data-est="${est.estudiante_id}">
+        <td class="px-5 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-border flex items-center justify-center text-text-muted font-bold text-xs uppercase">
+              ${est.nombre.charAt(0)}
+            </div>
+            <div>
+              <p class="font-bold text-text-main text-sm">${est.nombre}</p>
+              <p class="text-xs text-text-muted font-mono">V-${est.cedula}</p>
+            </div>
+          </div>
         </td>
-        <td class="px-2 py-1.5 text-center">
-          <select data-est="${est.estudiante_id}" data-field="estado" onchange="actualizarContadores()"
-                  class="asist-estado w-full bg-surface-element border border-border rounded-lg py-1.5 px-2 text-xs text-text-main font-bold focus:outline-none focus:border-tertiary/50 transition-all text-center">
-            <option value="PRESENTE" class="text-secondary">✅ Presente</option>
-            <option value="AUSENTE" class="text-error">❌ Ausente</option>
-            <option value="RETARDO" class="text-tertiary">⏰ Retardo</option>
-            <option value="JUSTIFICADO" class="text-primary">📋 Justificado</option>
-          </select>
+        <td class="px-5 py-3 text-center">
+          <div class="relative inline-block w-full">
+            <select data-est="${est.estudiante_id}" data-field="estado" onchange="actualizarContadores()"
+                    class="asist-estado w-full appearance-none bg-white border border-border rounded-lg py-2 px-3 text-xs font-bold focus:outline-none transition-all text-center cursor-pointer shadow-sm">
+              <option value="PRESENTE">✅ Presente</option>
+              <option value="AUSENTE">❌ Ausente</option>
+              <option value="RETARDO">⏰ Retardo</option>
+              <option value="JUSTIFICADO">📋 Justificado</option>
+            </select>
+            <ion-icon name="caret-down" class="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[10px]"></ion-icon>
+          </div>
         </td>
-        <td class="px-2 py-1.5 text-center">
+        <td class="px-5 py-3 text-center">
           <input type="time" data-est="${est.estudiante_id}" data-field="hora"
-                 class="asist-hora bg-surface-element border border-border rounded-lg py-1.5 px-2 text-xs text-text-main focus:outline-none focus:border-tertiary/50 transition-all w-20 [color-scheme:dark]"/>
+                 class="asist-hora bg-white border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all w-24 text-center shadow-sm"/>
         </td>
-        <td class="px-2 py-1.5">
-          <input type="text" data-est="${est.estudiante_id}" data-field="obs" maxlength="500" placeholder="Observación..."
-                 class="asist-obs w-full bg-surface-element border border-border rounded-lg py-1.5 px-2 text-xs text-text-main focus:outline-none focus:border-tertiary/50 transition-all placeholder:text-text-muted/40"/>
+        <td class="px-5 py-3">
+          <input type="text" data-est="${est.estudiante_id}" data-field="obs" maxlength="500" placeholder="Añadir nota..."
+                 class="asist-obs w-full bg-white border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all placeholder:text-text-muted/60 shadow-sm"/>
         </td>
       </tr>
     `;
@@ -381,7 +430,6 @@ async function cargarRegistrosFecha() {
   const d = await r.json();
   const regs = d.registros || {};
 
-  // Aplicar a la tabla
   _estudiantes.forEach(est => {
     const reg = regs[String(est.estudiante_id)];
     const selectEl = document.querySelector(`select[data-est="${est.estudiante_id}"]`);
@@ -401,7 +449,7 @@ function marcarTodos(estado) {
   actualizarContadores();
 }
 
-// ── Contadores ───────────────────────────────────────────────────────────────
+// ── Contadores y Estilos ──────────────────────────────────────────────────────
 function actualizarContadores() {
   let p = 0, a = 0, r = 0, j = 0;
   document.querySelectorAll('.asist-estado').forEach(sel => {
@@ -411,18 +459,26 @@ function actualizarContadores() {
       case 'RETARDO': r++; break;
       case 'JUSTIFICADO': j++; break;
     }
-    // Color del select basado en valor
-    sel.className = `asist-estado w-full bg-surface-element border rounded-lg py-1.5 px-2 text-xs font-bold focus:outline-none transition-all text-center ${
-      sel.value === 'PRESENTE' ? 'border-secondary/40 text-secondary' :
-      sel.value === 'AUSENTE' ? 'border-error/40 text-error' :
-      sel.value === 'RETARDO' ? 'border-tertiary/40 text-tertiary' :
-      'border-primary/40 text-primary'
+    
+    // Aplicar clases de color según el estado
+    sel.className = `asist-estado w-full appearance-none rounded-lg py-2 px-3 text-xs font-bold focus:outline-none transition-all text-center cursor-pointer shadow-sm border ${
+      sel.value === 'PRESENTE' ? 'bg-[#E6F4EA] text-[#137333] border-[#CEEAD6]' :
+      sel.value === 'AUSENTE' ? 'bg-[#FCE8E6] text-[#C5221F] border-[#FAD2CF]' :
+      sel.value === 'RETARDO' ? 'bg-[#FEF7E0] text-[#B06000] border-[#FDE293]' :
+      'bg-[#E8F0FE] text-[#1967D2] border-[#D2E3FC]'
     }`;
   });
-  document.getElementById('cnt-presentes').textContent = p;
-  document.getElementById('cnt-ausentes').textContent = a;
-  document.getElementById('cnt-retardos').textContent = r;
-  document.getElementById('cnt-justificados').textContent = j;
+  
+  // Animar números si cambian
+  ['presentes','ausentes','retardos','justificados'].forEach(tipo => {
+    const el = document.getElementById(`cnt-${tipo}`);
+    const val = tipo==='presentes'?p : tipo==='ausentes'?a : tipo==='retardos'?r : j;
+    if(el.textContent != val) {
+      el.textContent = val;
+      el.classList.add('scale-125');
+      setTimeout(()=>el.classList.remove('scale-125'), 150);
+    }
+  });
 }
 
 // ── Guardar ──────────────────────────────────────────────────────────────────
@@ -443,19 +499,31 @@ async function guardarAsistencia() {
     });
   });
 
-  const r = await fetch('/docente/api/asistencia/registrar/', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion,
-      fecha, registros
-    })
-  });
-  const d = await r.json();
-  if (d.ok) {
-    toast(`Asistencia guardada: ${d.guardados} registro(s).`);
-  } else {
-    toast(d.error || 'Error al guardar.', false);
+  const btn = event.currentTarget;
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = `<ion-icon name="sync" class="text-lg animate-spin"></ion-icon> Guardando...`;
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/docente/api/asistencia/registrar/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion,
+        fecha, registros
+      })
+    });
+    const d = await res.json();
+    if (d.ok) {
+      toast(`Registro guardado exitosamente.`);
+    } else {
+      toast(d.error || 'Error al guardar.', false);
+    }
+  } catch(e) {
+    toast('Error de conexión.', false);
+  } finally {
+    btn.innerHTML = originalHtml;
+    btn.disabled = false;
   }
 }
 
@@ -476,16 +544,16 @@ async function cargarHistorial() {
   hist.forEach(h => {
     const fechaFormato = new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-VE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
     tbody.innerHTML += `
-      <tr class="hover:bg-white/3 transition-colors">
-        <td class="px-4 py-2.5 font-semibold text-text-main text-xs">${fechaFormato}</td>
-        <td class="px-4 py-2.5 text-center text-secondary font-bold text-xs">${h.presentes}</td>
-        <td class="px-4 py-2.5 text-center text-error font-bold text-xs">${h.ausentes}</td>
-        <td class="px-4 py-2.5 text-center text-tertiary font-bold text-xs">${h.retardos}</td>
-        <td class="px-4 py-2.5 text-center text-primary font-bold text-xs">${h.justificados}</td>
-        <td class="px-4 py-2.5 text-center text-text-muted font-bold text-xs">${h.total}</td>
-        <td class="px-4 py-2.5 text-center">
-          <button onclick="verDiaHistorial('${h.fecha}')" class="text-tertiary hover:text-tertiary/80 text-xs font-semibold hover:underline">
-            <ion-icon name="eye-outline" class="text-sm mr-0.5"></ion-icon> Ver
+      <tr class="hover:bg-surface-element transition-colors">
+        <td class="px-5 py-4 font-bold text-text-main text-xs">${fechaFormato}</td>
+        <td class="px-5 py-4 text-center text-[#137333] font-black text-sm">${h.presentes}</td>
+        <td class="px-5 py-4 text-center text-[#C5221F] font-black text-sm">${h.ausentes}</td>
+        <td class="px-5 py-4 text-center text-[#B06000] font-black text-sm">${h.retardos}</td>
+        <td class="px-5 py-4 text-center text-[#1967D2] font-black text-sm">${h.justificados}</td>
+        <td class="px-5 py-4 text-center text-text-muted font-bold text-sm bg-surface-element">${h.total}</td>
+        <td class="px-5 py-4 text-center">
+          <button onclick="verDiaHistorial('${h.fecha}')" class="text-primary hover:text-emerald-700 text-xs font-bold bg-primary/10 px-3 py-1.5 rounded-lg transition-colors">
+            Ver Detalle
           </button>
         </td>
       </tr>
@@ -511,23 +579,25 @@ async function cargarEstadisticas() {
   tbody.innerHTML = '';
 
   stats.forEach(s => {
-    const color = s.porcentaje >= 75 ? 'text-secondary' : s.porcentaje >= 50 ? 'text-tertiary' : 'text-error';
+    const color = s.porcentaje >= 75 ? 'text-[#137333]' : s.porcentaje >= 50 ? 'text-[#B06000]' : 'text-[#C5221F]';
+    const bgColor = s.porcentaje >= 75 ? 'bg-[#137333]' : s.porcentaje >= 50 ? 'bg-[#B06000]' : 'bg-[#C5221F]';
+    
     tbody.innerHTML += `
-      <tr class="hover:bg-white/3 transition-colors">
-        <td class="px-4 py-2.5 text-xs">
-          <span class="font-semibold text-text-main">${s.nombre}</span><br>
-          <span class="text-text-muted font-mono">V-${s.cedula}</span>
+      <tr class="hover:bg-surface-element transition-colors">
+        <td class="px-5 py-4">
+          <span class="font-bold text-text-main text-sm">${s.nombre}</span><br>
+          <span class="text-xs text-text-muted font-mono">V-${s.cedula}</span>
         </td>
-        <td class="px-4 py-2.5 text-center text-secondary font-bold text-xs">${s.presentes}</td>
-        <td class="px-4 py-2.5 text-center text-error font-bold text-xs">${s.ausentes}</td>
-        <td class="px-4 py-2.5 text-center text-tertiary font-bold text-xs">${s.retardos}</td>
-        <td class="px-4 py-2.5 text-center text-primary font-bold text-xs">${s.justificados}</td>
-        <td class="px-4 py-2.5 text-center">
-          <div class="flex items-center justify-center gap-2">
-            <div class="w-16 bg-surface-element rounded-full h-2 overflow-hidden">
-              <div class="h-full ${s.porcentaje >= 75 ? 'bg-secondary' : s.porcentaje >= 50 ? 'bg-tertiary' : 'bg-error'} rounded-full transition-all" style="width:${s.porcentaje}%"></div>
+        <td class="px-5 py-4 text-center text-[#137333] font-bold text-sm">${s.presentes}</td>
+        <td class="px-5 py-4 text-center text-[#C5221F] font-bold text-sm">${s.ausentes}</td>
+        <td class="px-5 py-4 text-center text-[#B06000] font-bold text-sm">${s.retardos}</td>
+        <td class="px-5 py-4 text-center text-[#1967D2] font-bold text-sm">${s.justificados}</td>
+        <td class="px-5 py-4 text-center">
+          <div class="flex items-center justify-center gap-3">
+            <div class="w-full max-w-[100px] bg-border rounded-full h-2.5 overflow-hidden">
+              <div class="h-full ${bgColor} rounded-full transition-all" style="width:${s.porcentaje}%"></div>
             </div>
-            <span class="text-xs font-bold ${color}">${s.porcentaje}%</span>
+            <span class="text-sm font-black ${color}">${s.porcentaje}%</span>
           </div>
         </td>
       </tr>
@@ -535,4 +605,11 @@ async function cargarEstadisticas() {
   });
 }
 </script>
+<style>
+/* Animaciones para los contadores */
+[id^="cnt-"] {
+  transition: transform 0.15s ease-out;
+  display: inline-block;
+}
+</style>
 {% endblock %}

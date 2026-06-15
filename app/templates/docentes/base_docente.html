@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -10,25 +10,27 @@
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
+        darkMode: 'class', // We keep class but don't apply it to html by default
         theme: {
           extend: {
             colors: {
-              'background': '#0B0E11', 'surface': '#111417',
-              'surface-container': '#181C25', 'surface-element': '#1E232D',
-              'primary': '#6366F1', 'primary-glow': 'rgba(99,102,241,0.4)',
-              'secondary': '#10B981', 'secondary-glow': 'rgba(16,185,129,0.4)',
+              'background': '#F3F4F6', 'surface': '#FFFFFF',
+              'surface-container': '#FFFFFF', 'surface-element': '#F9FAFB',
+              'border': '#E5E7EB',
+              'primary': '#10B981', 'primary-glow': 'rgba(16,185,129,0.3)',
+              'secondary': '#3B82F6', 'secondary-glow': 'rgba(59,130,246,0.3)',
               'tertiary': '#F59E0B', 'error': '#EF4444',
-              'text-main': '#E1E2E7', 'text-muted': '#8A8D98',
+              'text-main': '#111827', 'text-muted': '#6B7280',
             },
             fontFamily: { headline: ['Manrope','sans-serif'], body: ['Inter','sans-serif'] },
-            boxShadow: { 'glass': '0 8px 32px 0 rgba(0,0,0,0.3)', 'neon-primary': '0 0 20px rgba(99,102,241,0.3)' },
+            boxShadow: { 'glass': '0 4px 20px 0 rgba(0,0,0,0.05)', 'neon-primary': '0 0 15px rgba(16,185,129,0.4)' },
           }
         }
       }
     </script>
     <style>
-      /* ─── Docente Portal Responsive ─── */
+      /* ─── Docente Portal Responsive (Light Theme) ─── */
+      body { background-color: #F3F4F6; }
       @media (max-width: 768px) {
         input:not([type="checkbox"]):not([type="radio"]),
         select, textarea { font-size: 16px !important; }
@@ -38,109 +40,102 @@
         input[type="checkbox"], input[type="radio"] { width: 22px; height: 22px; }
       }
       @media (max-width: 480px) {
-        .bottom-nav-compact { height: 52px !important; }
+        .bottom-nav-compact { height: 60px !important; }
         [class*="grid-cols-2"], [class*="grid-cols-3"], [class*="grid-cols-4"] {
           grid-template-columns: 1fr !important;
         }
         [class*="max-w-"] { max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }
       }
+      /* Custom Scrollbar for Light Theme */
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
     </style>
 </head>
-<body class="bg-background text-text-main font-body flex h-screen overflow-hidden">
+<body class="bg-background text-text-main font-body flex flex-col h-screen overflow-hidden">
 
-    <!-- Sidebar (Escritorio) -->
-    <aside class="w-64 flex-shrink-0 bg-surface-container/70 backdrop-blur-xl border-r border-border hidden md:flex flex-col z-40">
+    <!-- Top Navigation Bar (Escritorio y Móvil Header) -->
+    <header class="h-16 flex-shrink-0 bg-surface border-b border-border flex items-center justify-between px-4 md:px-8 z-40 shadow-sm">
+        
         <!-- Logo -->
-        <div class="h-16 flex items-center px-6 border-b border-border/50">
-            <div class="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center mr-3 shadow-neon-primary">
-                <ion-icon name="school-outline" class="text-primary text-base"></ion-icon>
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-neon-primary">
+                <ion-icon name="school" class="text-white text-xl"></ion-icon>
             </div>
-            <span class="font-headline font-bold text-sm text-text-main tracking-wide">Portal Docente</span>
+            <span class="font-headline font-extrabold text-lg text-text-main tracking-tight hidden sm:block">Portal<span class="text-primary">Docente</span></span>
         </div>
 
-        <!-- Perfil Resumen -->
-        <div class="p-6 border-b border-border/30 text-center">
-            <div class="w-16 h-16 rounded-full mx-auto bg-surface-element border border-border flex items-center justify-center overflow-hidden mb-3">
-                {% if session.get('foto_perfil') %}
-                <img src="{{ session.foto_perfil }}" alt="Perfil" class="w-full h-full object-cover">
-                {% else %}
-                <ion-icon name="person" class="text-2xl text-text-muted"></ion-icon>
-                {% endif %}
-            </div>
-            <p class="font-bold text-sm text-text-main truncate">{{ session.get('username', 'Usuario') }}</p>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-semibold uppercase tracking-wide mt-1.5 inline-block">Docente</span>
-        </div>
-
-        <!-- Navegación -->
-        <nav class="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-3 px-3">Menú Principal</p>
-            
-            <a href="{{ url_for('dashboard.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.endpoint == 'dashboard.index' %}bg-primary/10 text-primary shadow-sm border border-primary/20{% else %}text-text-muted hover:bg-surface-element hover:text-text-main border border-transparent{% endif %}">
+        <!-- Navegación Principal (Escritorio) -->
+        <nav class="hidden md:flex items-center gap-2 lg:gap-4 bg-surface-element rounded-full px-2 py-1 border border-border">
+            <a href="{{ url_for('dashboard.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'dashboard.index' %}bg-white text-primary shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
                 <ion-icon name="grid-outline" class="text-lg"></ion-icon>
-                Dashboard
+                <span>Dashboard</span>
             </a>
-            <a href="{{ url_for('calificaciones.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.endpoint == 'calificaciones.index' %}bg-primary/10 text-primary shadow-sm border border-primary/20{% else %}text-text-muted hover:bg-surface-element hover:text-text-main border border-transparent{% endif %}">
+            <a href="{{ url_for('calificaciones.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'calificaciones.index' %}bg-white text-primary shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
                 <ion-icon name="document-text-outline" class="text-lg"></ion-icon>
-                Calificaciones
+                <span>Calificaciones</span>
             </a>
-            <a href="{{ url_for('planificacion.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.endpoint == 'planificacion.index' %}bg-primary/10 text-primary shadow-sm border border-primary/20{% else %}text-text-muted hover:bg-surface-element hover:text-text-main border border-transparent{% endif %}">
+            <a href="{{ url_for('planificacion.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'planificacion.index' %}bg-white text-primary shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
                 <ion-icon name="calendar-outline" class="text-lg"></ion-icon>
-                Planificación
+                <span>Planificación</span>
             </a>
-            <a href="{{ url_for('asistencia.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all {% if request.endpoint == 'asistencia.index' %}bg-primary/10 text-primary shadow-sm border border-primary/20{% else %}text-text-muted hover:bg-surface-element hover:text-text-main border border-transparent{% endif %}">
+            <a href="{{ url_for('asistencia.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'asistencia.index' %}bg-white text-primary shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
                 <ion-icon name="people-outline" class="text-lg"></ion-icon>
-                Asistencia
+                <span>Asistencia</span>
             </a>
         </nav>
 
-        <!-- Cerrar Sesión -->
-        <div class="p-4 border-t border-border/50">
-            <a href="{{ url_for('auth.logout') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:bg-error/10 hover:text-error border border-transparent hover:border-error/20 transition-all">
-                <ion-icon name="log-out-outline" class="text-lg"></ion-icon>
-                Cerrar Sesión
+        <!-- Perfil y Acciones -->
+        <div class="flex items-center gap-3">
+            <button class="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-muted hover:text-primary hover:bg-surface-element transition-colors">
+                <ion-icon name="notifications-outline" class="text-xl"></ion-icon>
+            </button>
+            <a href="{{ url_for('auth.logout') }}" class="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-muted hover:text-error hover:bg-error/10 transition-colors hidden sm:flex">
+                <ion-icon name="log-out-outline" class="text-xl"></ion-icon>
             </a>
+            <div class="flex items-center gap-3 pl-3 border-l border-border ml-1">
+                <div class="hidden sm:block text-right">
+                    <p class="font-bold text-sm text-text-main leading-tight">{{ session.get('username', 'Docente') }}</p>
+                    <p class="text-xs text-text-muted">Administrador</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-surface-element border border-border flex items-center justify-center overflow-hidden">
+                    {% if session.get('foto_perfil') %}
+                    <img src="{{ session.foto_perfil }}" alt="Perfil" class="w-full h-full object-cover">
+                    {% else %}
+                    <ion-icon name="person" class="text-xl text-text-muted"></ion-icon>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-    </aside>
+    </header>
 
     <!-- Contenedor Principal -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        
-        <!-- Header Móvil -->
-        <header class="md:hidden h-16 flex-shrink-0 flex items-center justify-between px-4 border-b border-border bg-surface-container/90 backdrop-blur-md z-30">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-                    <ion-icon name="school-outline" class="text-primary text-base"></ion-icon>
-                </div>
-                <span class="font-headline font-bold text-sm text-text-main">Portal Docente</span>
-            </div>
-            <a href="{{ url_for('auth.logout') }}" class="text-text-muted hover:text-error transition-colors p-2">
-                <ion-icon name="log-out-outline" class="text-2xl"></ion-icon>
-            </a>
-        </header>
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar relative z-10">
+        {% block content %}{% endblock %}
+    </main>
 
-        <!-- Content -->
-        <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar relative">
-            {% block content %}{% endblock %}
-        </main>
-    </div>
-
-    <!-- Menú Móvil Simple -->
-    <div class="md:hidden flex-shrink-0 h-16 bg-surface-container border-t border-border flex items-center justify-around px-2 z-30">
-        <a href="{{ url_for('dashboard.index') }}" class="flex flex-col items-center gap-1 p-2 rounded-lg {% if request.endpoint == 'dashboard.index' %}text-primary{% else %}text-text-muted{% endif %}">
-            <ion-icon name="grid-outline" class="text-xl"></ion-icon>
-            <span class="text-[9px] font-bold uppercase tracking-wider">Inicio</span>
+    <!-- Menú Móvil Simple (Bottom Nav) -->
+    <div class="md:hidden flex-shrink-0 h-[60px] bg-surface border-t border-border flex items-center justify-around px-2 z-40 pb-safe">
+        <a href="{{ url_for('dashboard.index') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl {% if request.endpoint == 'dashboard.index' %}text-primary{% else %}text-text-muted{% endif %}">
+            <ion-icon name="{% if request.endpoint == 'dashboard.index' %}grid{% else %}grid-outline{% endif %}" class="text-2xl"></ion-icon>
+            <span class="text-[10px] font-bold tracking-wide">Inicio</span>
         </a>
-        <a href="{{ url_for('calificaciones.index') }}" class="flex flex-col items-center gap-1 p-2 rounded-lg {% if request.endpoint == 'calificaciones.index' %}text-primary{% else %}text-text-muted{% endif %}">
-            <ion-icon name="document-text-outline" class="text-xl"></ion-icon>
-            <span class="text-[9px] font-bold uppercase tracking-wider">Notas</span>
+        <a href="{{ url_for('calificaciones.index') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl {% if request.endpoint == 'calificaciones.index' %}text-primary{% else %}text-text-muted{% endif %}">
+            <ion-icon name="{% if request.endpoint == 'calificaciones.index' %}document-text{% else %}document-text-outline{% endif %}" class="text-2xl"></ion-icon>
+            <span class="text-[10px] font-bold tracking-wide">Notas</span>
         </a>
-        <a href="{{ url_for('planificacion.index') }}" class="flex flex-col items-center gap-1 p-2 rounded-lg {% if request.endpoint == 'planificacion.index' %}text-primary{% else %}text-text-muted{% endif %}">
-            <ion-icon name="calendar-outline" class="text-xl"></ion-icon>
-            <span class="text-[9px] font-bold uppercase tracking-wider">Plan</span>
+        <a href="{{ url_for('planificacion.index') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl {% if request.endpoint == 'planificacion.index' %}text-primary{% else %}text-text-muted{% endif %}">
+            <ion-icon name="{% if request.endpoint == 'planificacion.index' %}calendar{% else %}calendar-outline{% endif %}" class="text-2xl"></ion-icon>
+            <span class="text-[10px] font-bold tracking-wide">Plan</span>
         </a>
-        <a href="{{ url_for('asistencia.index') }}" class="flex flex-col items-center gap-1 p-2 rounded-lg {% if request.endpoint == 'asistencia.index' %}text-primary{% else %}text-text-muted{% endif %}">
-            <ion-icon name="people-outline" class="text-xl"></ion-icon>
-            <span class="text-[9px] font-bold uppercase tracking-wider">Asist.</span>
+        <a href="{{ url_for('asistencia.index') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl {% if request.endpoint == 'asistencia.index' %}text-primary{% else %}text-text-muted{% endif %}">
+            <ion-icon name="{% if request.endpoint == 'asistencia.index' %}people{% else %}people-outline{% endif %}" class="text-2xl"></ion-icon>
+            <span class="text-[10px] font-bold tracking-wide">Asist.</span>
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="flex flex-col items-center gap-1 p-2 rounded-xl text-text-muted hover:text-error">
+            <ion-icon name="log-out-outline" class="text-2xl"></ion-icon>
+            <span class="text-[10px] font-bold tracking-wide">Salir</span>
         </a>
     </div>
 

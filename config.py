@@ -10,7 +10,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'flask-insecure-key')
     
     # Base de datos
-    _database_url = os.environ.get('DATABASE_URL', '')
+    _database_url = os.environ.get('DATABASE_URL', '').strip()
     
     # Auto-corrección si la URL contiene '@@' (por contraseñas terminadas en '@')
     if '@@' in _database_url:
@@ -29,5 +29,5 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Supabase Integracion
-    SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
-    SUPABASE_KEY = os.environ.get('SUPABASE_ANON_KEY', '')
+    SUPABASE_URL = os.environ.get('SUPABASE_URL', '').strip()
+    SUPABASE_KEY = os.environ.get('SUPABASE_ANON_KEY', '').strip()

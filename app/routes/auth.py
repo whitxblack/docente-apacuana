@@ -59,7 +59,12 @@ def login():
                 try:
                     resp = requests.post(url, headers=headers, json=payload, timeout=10)
                     if resp.status_code == 200:
-                        data = resp.json()
+                        try:
+                            data = resp.json()
+                        except ValueError:
+                            error = 'Error de formato en la respuesta de autenticación.'
+                            return render_template('auth/login.html', error=error)
+                            
                         supabase_email = data.get('user', {}).get('email', '').strip().lower()
                         
                         from app import db
@@ -78,11 +83,14 @@ def login():
                         else:
                             error = 'Tu cuenta está inactiva o no registrada en la base de datos principal.'
                     else:
-                        error_data = resp.json()
-                        error_msg = error_data.get('error_description', 'Credenciales incorrectas.')
+                        try:
+                            error_data = resp.json()
+                            error_msg = error_data.get('error_description', 'Credenciales incorrectas.')
+                        except ValueError:
+                            error_msg = f'Código de error de red: {resp.status_code}'
                         error = f'Error de autenticación: {error_msg}'
-                except requests.exceptions.RequestException:
-                    error = 'Error de conexión con el servicio de autenticación (Supabase).'
+                except Exception as e:
+                    error = f'Error de conexión con el servicio de autenticación: {str(e)}'
                     
     return render_template('auth/login.html', error=error)
 

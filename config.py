@@ -12,6 +12,10 @@ class Config:
     # Base de datos
     _database_url = os.environ.get('DATABASE_URL', '')
     
+    # Auto-corrección si la URL contiene '@@' (por contraseñas terminadas en '@')
+    if '@@' in _database_url:
+        _database_url = _database_url.replace('@@', '%40@', 1)
+        
     if _database_url:
         SQLALCHEMY_DATABASE_URI = _database_url
     else:

@@ -1,0 +1,538 @@
+{% extends 'docentes/base_docente.html' %}
+{% block title %}Registro de Asistencia{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+
+  <!-- Título -->
+  <div>
+    <h2 class="font-headline font-extrabold text-xl text-text-main flex items-center gap-2">
+      <ion-icon name="people-outline" class="text-tertiary"></ion-icon>
+      Registro de Asistencia
+    </h2>
+    <p class="text-sm text-text-muted mt-1">Pasa asistencia a tus estudiantes por fecha y materia.</p>
+  </div>
+
+  <!-- ── Selector en cascada (3 pasos) ─────────────────────────────────── -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <!-- 1 · Período -->
+    <div class="bg-surface-container/60 border border-border rounded-2xl p-4">
+      <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">1 · Período Escolar</label>
+      <select id="sel-periodo" onchange="onPeriodoChange()"
+              class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-tertiary/50 focus:ring-1 focus:ring-tertiary/40 transition-all">
+        <option value="">— Selecciona —</option>
+        {% for p in periodos %}
+        <option value="{{ p.id }}">{{ p.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- 2 · Año y Sección -->
+    <div class="bg-surface-container/60 border border-border rounded-2xl p-4 opacity-40 transition-all" id="card-combo">
+      <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">2 · Año y Sección</label>
+      <select id="sel-combo" onchange="onComboChange()" disabled
+              class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-tertiary/50 focus:ring-1 focus:ring-tertiary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+        <option value="">— Elige el período primero —</option>
+      </select>
+    </div>
+
+    <!-- 3 · Materia -->
+    <div class="bg-surface-container/60 border border-border rounded-2xl p-4 opacity-40 transition-all" id="card-materia">
+      <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">3 · Materia</label>
+      <select id="sel-materia" onchange="cargarAsistencia()" disabled
+              class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-tertiary/50 focus:ring-1 focus:ring-tertiary/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+        <option value="">— Completa los pasos anteriores —</option>
+      </select>
+    </div>
+
+  </div>
+
+  <!-- ── Panel Principal ────────────────────────────────────────────────── -->
+  <div id="panel-principal" class="hidden space-y-5">
+
+    <!-- Barra superior con fecha y tabs -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h3 id="titulo-tabla" class="font-headline font-bold text-base text-text-main"></h3>
+        <p id="sub-tabla" class="text-xs text-text-muted mt-0.5"></p>
+      </div>
+      <div class="flex gap-2">
+        <button id="tab-pasar" onclick="cambiarTab('pasar')"
+                class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all bg-tertiary/10 text-tertiary border-tertiary/20">
+          <ion-icon name="checkbox-outline" class="text-sm mr-1"></ion-icon> Pasar Lista
+        </button>
+        <button id="tab-historial" onclick="cambiarTab('historial')"
+                class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-text-muted border-border hover:bg-surface-element">
+          <ion-icon name="time-outline" class="text-sm mr-1"></ion-icon> Historial
+        </button>
+        <button id="tab-stats" onclick="cambiarTab('stats')"
+                class="px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-text-muted border-border hover:bg-surface-element">
+          <ion-icon name="stats-chart-outline" class="text-sm mr-1"></ion-icon> Estadísticas
+        </button>
+      </div>
+    </div>
+
+    <!-- ═════════ TAB: PASAR LISTA ═════════ -->
+    <div id="vista-pasar" class="space-y-4">
+      <!-- Selector de fecha -->
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="bg-surface-container/60 border border-border rounded-xl p-3 flex items-center gap-3">
+          <ion-icon name="calendar-outline" class="text-tertiary text-lg"></ion-icon>
+          <input type="date" id="fecha-asistencia" onchange="cargarRegistrosFecha()"
+                 class="bg-transparent border-none text-sm text-text-main focus:outline-none focus:ring-0 [color-scheme:dark]"/>
+        </div>
+        <button onclick="marcarTodos('PRESENTE')"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 transition-all">
+          <ion-icon name="checkmark-done-outline"></ion-icon> Todos Presentes
+        </button>
+        <button onclick="marcarTodos('AUSENTE')"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-error/10 text-error border border-error/20 hover:bg-error/20 transition-all">
+          <ion-icon name="close-outline"></ion-icon> Todos Ausentes
+        </button>
+      </div>
+
+      <!-- Tabla de asistencia -->
+      <div class="bg-surface-container/60 border border-border rounded-2xl overflow-hidden shadow-md">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse" id="tabla-asistencia">
+            <thead>
+              <tr class="bg-surface-element/50 border-b border-border text-[10px] uppercase tracking-wider text-text-muted">
+                <th class="px-4 py-3 min-w-[200px]">Estudiante</th>
+                <th class="px-4 py-3 text-center w-28">Estado</th>
+                <th class="px-4 py-3 text-center w-24">Hora</th>
+                <th class="px-4 py-3 w-60">Observación</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-asistencia" class="divide-y divide-white/5 text-sm">
+              <!-- Inyectado por JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="estado-vacio-asist" class="hidden py-16 text-center">
+          <ion-icon name="people-outline" class="text-5xl text-text-muted/30 block mx-auto mb-3"></ion-icon>
+          <p class="text-text-muted text-sm">No hay estudiantes en esta sección.</p>
+        </div>
+      </div>
+
+      <!-- Resumen rápido + Guardar -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex gap-4">
+          <span class="flex items-center gap-1.5 text-xs font-bold text-secondary">
+            <span class="w-3 h-3 rounded-full bg-secondary inline-block"></span>
+            Presentes: <span id="cnt-presentes">0</span>
+          </span>
+          <span class="flex items-center gap-1.5 text-xs font-bold text-error">
+            <span class="w-3 h-3 rounded-full bg-error inline-block"></span>
+            Ausentes: <span id="cnt-ausentes">0</span>
+          </span>
+          <span class="flex items-center gap-1.5 text-xs font-bold text-tertiary">
+            <span class="w-3 h-3 rounded-full bg-tertiary inline-block"></span>
+            Retardos: <span id="cnt-retardos">0</span>
+          </span>
+          <span class="flex items-center gap-1.5 text-xs font-bold text-primary">
+            <span class="w-3 h-3 rounded-full bg-primary inline-block"></span>
+            Justificados: <span id="cnt-justificados">0</span>
+          </span>
+        </div>
+        <button onclick="guardarAsistencia()"
+                class="flex items-center gap-2 bg-tertiary hover:bg-tertiary/80 text-background px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg">
+          <ion-icon name="save-outline" class="text-base"></ion-icon> Guardar Asistencia
+        </button>
+      </div>
+    </div>
+
+    <!-- ═════════ TAB: HISTORIAL ═════════ -->
+    <div id="vista-historial" class="hidden space-y-4">
+      <div class="bg-surface-container/60 border border-border rounded-2xl overflow-hidden shadow-md">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-element/50 border-b border-border text-[10px] uppercase tracking-wider text-text-muted">
+                <th class="px-4 py-3">Fecha</th>
+                <th class="px-4 py-3 text-center">Presentes</th>
+                <th class="px-4 py-3 text-center">Ausentes</th>
+                <th class="px-4 py-3 text-center">Retardos</th>
+                <th class="px-4 py-3 text-center">Justificados</th>
+                <th class="px-4 py-3 text-center">Total</th>
+                <th class="px-4 py-3 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-historial" class="divide-y divide-white/5 text-sm">
+              <!-- Inyectado por JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="estado-vacio-hist" class="hidden py-16 text-center">
+          <ion-icon name="time-outline" class="text-5xl text-text-muted/30 block mx-auto mb-3"></ion-icon>
+          <p class="text-text-muted text-sm">Aún no se ha registrado asistencia.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════ TAB: ESTADÍSTICAS ═════════ -->
+    <div id="vista-stats" class="hidden space-y-4">
+      <div class="bg-surface-container/60 border border-border rounded-xl px-4 py-2.5 flex items-center gap-3">
+        <ion-icon name="analytics-outline" class="text-primary text-lg"></ion-icon>
+        <span class="text-xs text-text-muted">Total de clases registradas:</span>
+        <span id="total-clases-stats" class="text-sm font-bold text-primary">0</span>
+      </div>
+      <div class="bg-surface-container/60 border border-border rounded-2xl overflow-hidden shadow-md">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-element/50 border-b border-border text-[10px] uppercase tracking-wider text-text-muted">
+                <th class="px-4 py-3 min-w-[200px]">Estudiante</th>
+                <th class="px-4 py-3 text-center">Presentes</th>
+                <th class="px-4 py-3 text-center">Ausentes</th>
+                <th class="px-4 py-3 text-center">Retardos</th>
+                <th class="px-4 py-3 text-center">Justificados</th>
+                <th class="px-4 py-3 text-center">% Asistencia</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-stats" class="divide-y divide-white/5 text-sm">
+              <!-- Inyectado por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado inicial -->
+  <div id="estado-inicial" class="py-20 text-center">
+    <ion-icon name="people-circle-outline" class="text-6xl text-tertiary/20 block mx-auto mb-4"></ion-icon>
+    <p class="text-text-muted">Selecciona un período, sección y materia para comenzar.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let _periodoId = null, _anoGrado = null, _seccion = null, _asignaturaId = null;
+let _estudiantes = [];
+
+function habilitarCard(id) {
+  document.getElementById(id).classList.remove('opacity-40');
+}
+function toast(msg, ok=true) {
+  const t = document.createElement('div');
+  t.className = `fixed bottom-6 right-6 z-[99999] flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold transition-all
+    ${ok ? 'bg-secondary/10 border border-secondary/20 text-secondary' : 'bg-error/10 border border-error/20 text-error'}`;
+  t.innerHTML = `<ion-icon name="${ok?'checkmark-circle':'alert-circle'}-outline" class="text-base"></ion-icon>${msg}`;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
+}
+
+// Tabs
+function cambiarTab(tab) {
+  ['pasar','historial','stats'].forEach(t => {
+    document.getElementById(`vista-${t}`).classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById(`tab-${t}`);
+    if (t === tab) {
+      btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition-all bg-tertiary/10 text-tertiary border-tertiary/20';
+    } else {
+      btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition-all text-text-muted border-border hover:bg-surface-element';
+    }
+  });
+  
+  if (tab === 'historial') cargarHistorial();
+  if (tab === 'stats') cargarEstadisticas();
+}
+
+// ── Cascada de selectores (reutiliza las mismas APIs que calificaciones) ──
+async function onPeriodoChange() {
+  _periodoId = document.getElementById('sel-periodo').value;
+  const selCombo = document.getElementById('sel-combo');
+  const selMat   = document.getElementById('sel-materia');
+
+  selCombo.innerHTML = '<option value="">Cargando...</option>';
+  selCombo.disabled = true;
+  selMat.innerHTML = '<option value="">— Completa los pasos anteriores —</option>';
+  selMat.disabled = true;
+  document.getElementById('panel-principal').classList.add('hidden');
+  document.getElementById('estado-inicial').classList.remove('hidden');
+  ['card-combo','card-materia'].forEach(id => document.getElementById(id).classList.add('opacity-40'));
+  _anoGrado = null; _seccion = null; _asignaturaId = null;
+
+  if (!_periodoId) { selCombo.innerHTML = '<option value="">— Elige el período primero —</option>'; return; }
+
+  const r = await fetch(`/docente/api/combinaciones/?periodo_id=${_periodoId}`);
+  const d = await r.json();
+  const combos = d.combinaciones || [];
+
+  if (!combos.length) {
+    selCombo.innerHTML = '<option value="">— Sin asignaciones en este período —</option>';
+    habilitarCard('card-combo');
+    return;
+  }
+
+  selCombo.innerHTML = '<option value="">— Selecciona Año y Sección —</option>';
+  combos.forEach(c => {
+    selCombo.innerHTML += `<option value="${c.valor}" data-ano="${c.ano_grado}" data-sec="${c.seccion}">${c.label}</option>`;
+  });
+  selCombo.disabled = false;
+  habilitarCard('card-combo');
+}
+
+async function onComboChange() {
+  const opt = document.getElementById('sel-combo').selectedOptions[0];
+  const selMat = document.getElementById('sel-materia');
+
+  selMat.innerHTML = '<option value="">Cargando materias...</option>';
+  selMat.disabled = true;
+  document.getElementById('panel-principal').classList.add('hidden');
+  document.getElementById('estado-inicial').classList.remove('hidden');
+  document.getElementById('card-materia').classList.add('opacity-40');
+  _asignaturaId = null;
+
+  if (!opt || !opt.value) { _anoGrado = null; _seccion = null; return; }
+
+  _anoGrado = opt.dataset.ano;
+  _seccion  = opt.dataset.sec;
+
+  const r = await fetch(`/docente/api/materias-combo/?periodo_id=${_periodoId}&ano_grado=${_anoGrado}&seccion=${_seccion}`);
+  const d = await r.json();
+  const materias = d.materias || [];
+
+  if (!materias.length) {
+    selMat.innerHTML = '<option value="">— Sin materias asignadas —</option>';
+    habilitarCard('card-materia');
+    return;
+  }
+
+  selMat.innerHTML = '<option value="">— Selecciona materia —</option>';
+  materias.forEach(m => { selMat.innerHTML += `<option value="${m.id}">${m.nombre}</option>`; });
+  selMat.disabled = false;
+  habilitarCard('card-materia');
+}
+
+async function cargarAsistencia() {
+  _asignaturaId = document.getElementById('sel-materia').value;
+  if (!_asignaturaId) return;
+
+  const matNombre = document.getElementById('sel-materia').selectedOptions[0].text;
+  document.getElementById('titulo-tabla').textContent = matNombre;
+  document.getElementById('sub-tabla').textContent = `Año ${_anoGrado} · Sección ${_seccion} · Período ${document.getElementById('sel-periodo').selectedOptions[0].text}`;
+
+  // Setear fecha de hoy por defecto
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('fecha-asistencia').value = hoy;
+
+  // Cargar estudiantes
+  const r = await fetch(`/docente/api/estudiantes/?periodo_id=${_periodoId}&ano_grado=${_anoGrado}&seccion=${_seccion}&asignatura_id=${_asignaturaId}`);
+  const d = await r.json();
+  _estudiantes = d.estudiantes || [];
+
+  renderTablaAsistencia();
+  cargarRegistrosFecha();
+
+  document.getElementById('panel-principal').classList.remove('hidden');
+  document.getElementById('estado-inicial').classList.add('hidden');
+}
+
+// ── Render Tabla ─────────────────────────────────────────────────────────────
+function renderTablaAsistencia() {
+  const tbody = document.getElementById('tbody-asistencia');
+  tbody.innerHTML = '';
+
+  if (_estudiantes.length === 0) {
+    document.getElementById('estado-vacio-asist').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('estado-vacio-asist').classList.add('hidden');
+
+  _estudiantes.forEach(est => {
+    tbody.innerHTML += `
+      <tr class="hover:bg-white/3 transition-colors" data-est="${est.estudiante_id}">
+        <td class="px-4 py-2.5 font-semibold text-text-main text-xs">
+          ${est.nombre}<br><span class="text-text-muted font-normal font-mono">V-${est.cedula}</span>
+        </td>
+        <td class="px-2 py-1.5 text-center">
+          <select data-est="${est.estudiante_id}" data-field="estado" onchange="actualizarContadores()"
+                  class="asist-estado w-full bg-surface-element border border-border rounded-lg py-1.5 px-2 text-xs text-text-main font-bold focus:outline-none focus:border-tertiary/50 transition-all text-center">
+            <option value="PRESENTE" class="text-secondary">✅ Presente</option>
+            <option value="AUSENTE" class="text-error">❌ Ausente</option>
+            <option value="RETARDO" class="text-tertiary">⏰ Retardo</option>
+            <option value="JUSTIFICADO" class="text-primary">📋 Justificado</option>
+          </select>
+        </td>
+        <td class="px-2 py-1.5 text-center">
+          <input type="time" data-est="${est.estudiante_id}" data-field="hora"
+                 class="asist-hora bg-surface-element border border-border rounded-lg py-1.5 px-2 text-xs text-text-main focus:outline-none focus:border-tertiary/50 transition-all w-20 [color-scheme:dark]"/>
+        </td>
+        <td class="px-2 py-1.5">
+          <input type="text" data-est="${est.estudiante_id}" data-field="obs" maxlength="500" placeholder="Observación..."
+                 class="asist-obs w-full bg-surface-element border border-border rounded-lg py-1.5 px-2 text-xs text-text-main focus:outline-none focus:border-tertiary/50 transition-all placeholder:text-text-muted/40"/>
+        </td>
+      </tr>
+    `;
+  });
+  actualizarContadores();
+}
+
+// ── Cargar registros existentes para una fecha ───────────────────────────────
+async function cargarRegistrosFecha() {
+  const fecha = document.getElementById('fecha-asistencia').value;
+  if (!fecha || !_asignaturaId) return;
+
+  const r = await fetch(`/docente/api/asistencia/obtener/?asignatura_id=${_asignaturaId}&periodo_id=${_periodoId}&seccion=${_seccion}&fecha=${fecha}`);
+  const d = await r.json();
+  const regs = d.registros || {};
+
+  // Aplicar a la tabla
+  _estudiantes.forEach(est => {
+    const reg = regs[String(est.estudiante_id)];
+    const selectEl = document.querySelector(`select[data-est="${est.estudiante_id}"]`);
+    const horaEl = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="hora"]`);
+    const obsEl = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="obs"]`);
+    
+    if (selectEl) selectEl.value = reg ? reg.estado : 'PRESENTE';
+    if (horaEl) horaEl.value = reg && reg.hora_llegada ? reg.hora_llegada : '';
+    if (obsEl) obsEl.value = reg ? reg.observacion : '';
+  });
+  actualizarContadores();
+}
+
+// ── Marcar Todos ─────────────────────────────────────────────────────────────
+function marcarTodos(estado) {
+  document.querySelectorAll('.asist-estado').forEach(sel => sel.value = estado);
+  actualizarContadores();
+}
+
+// ── Contadores ───────────────────────────────────────────────────────────────
+function actualizarContadores() {
+  let p = 0, a = 0, r = 0, j = 0;
+  document.querySelectorAll('.asist-estado').forEach(sel => {
+    switch(sel.value) {
+      case 'PRESENTE': p++; break;
+      case 'AUSENTE': a++; break;
+      case 'RETARDO': r++; break;
+      case 'JUSTIFICADO': j++; break;
+    }
+    // Color del select basado en valor
+    sel.className = `asist-estado w-full bg-surface-element border rounded-lg py-1.5 px-2 text-xs font-bold focus:outline-none transition-all text-center ${
+      sel.value === 'PRESENTE' ? 'border-secondary/40 text-secondary' :
+      sel.value === 'AUSENTE' ? 'border-error/40 text-error' :
+      sel.value === 'RETARDO' ? 'border-tertiary/40 text-tertiary' :
+      'border-primary/40 text-primary'
+    }`;
+  });
+  document.getElementById('cnt-presentes').textContent = p;
+  document.getElementById('cnt-ausentes').textContent = a;
+  document.getElementById('cnt-retardos').textContent = r;
+  document.getElementById('cnt-justificados').textContent = j;
+}
+
+// ── Guardar ──────────────────────────────────────────────────────────────────
+async function guardarAsistencia() {
+  const fecha = document.getElementById('fecha-asistencia').value;
+  if (!fecha) { toast('Selecciona una fecha.', false); return; }
+
+  const registros = [];
+  _estudiantes.forEach(est => {
+    const estado = document.querySelector(`select[data-est="${est.estudiante_id}"]`).value;
+    const hora = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="hora"]`).value;
+    const obs = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="obs"]`).value;
+    registros.push({
+      estudiante_id: est.estudiante_id,
+      estado,
+      hora_llegada: hora || null,
+      observacion: obs
+    });
+  });
+
+  const r = await fetch('/docente/api/asistencia/registrar/', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion,
+      fecha, registros
+    })
+  });
+  const d = await r.json();
+  if (d.ok) {
+    toast(`Asistencia guardada: ${d.guardados} registro(s).`);
+  } else {
+    toast(d.error || 'Error al guardar.', false);
+  }
+}
+
+// ── Historial ────────────────────────────────────────────────────────────────
+async function cargarHistorial() {
+  const r = await fetch(`/docente/api/asistencia/historial/?asignatura_id=${_asignaturaId}&periodo_id=${_periodoId}&seccion=${_seccion}`);
+  const d = await r.json();
+  const hist = d.historial || [];
+  const tbody = document.getElementById('tbody-historial');
+  tbody.innerHTML = '';
+
+  if (hist.length === 0) {
+    document.getElementById('estado-vacio-hist').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('estado-vacio-hist').classList.add('hidden');
+
+  hist.forEach(h => {
+    const fechaFormato = new Date(h.fecha + 'T12:00:00').toLocaleDateString('es-VE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    tbody.innerHTML += `
+      <tr class="hover:bg-white/3 transition-colors">
+        <td class="px-4 py-2.5 font-semibold text-text-main text-xs">${fechaFormato}</td>
+        <td class="px-4 py-2.5 text-center text-secondary font-bold text-xs">${h.presentes}</td>
+        <td class="px-4 py-2.5 text-center text-error font-bold text-xs">${h.ausentes}</td>
+        <td class="px-4 py-2.5 text-center text-tertiary font-bold text-xs">${h.retardos}</td>
+        <td class="px-4 py-2.5 text-center text-primary font-bold text-xs">${h.justificados}</td>
+        <td class="px-4 py-2.5 text-center text-text-muted font-bold text-xs">${h.total}</td>
+        <td class="px-4 py-2.5 text-center">
+          <button onclick="verDiaHistorial('${h.fecha}')" class="text-tertiary hover:text-tertiary/80 text-xs font-semibold hover:underline">
+            <ion-icon name="eye-outline" class="text-sm mr-0.5"></ion-icon> Ver
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function verDiaHistorial(fecha) {
+  document.getElementById('fecha-asistencia').value = fecha;
+  cambiarTab('pasar');
+  cargarRegistrosFecha();
+}
+
+// ── Estadísticas ─────────────────────────────────────────────────────────────
+async function cargarEstadisticas() {
+  const r = await fetch(`/docente/api/asistencia/estadisticas/?asignatura_id=${_asignaturaId}&periodo_id=${_periodoId}&seccion=${_seccion}&ano_grado=${_anoGrado}`);
+  const d = await r.json();
+  const stats = d.estadisticas || [];
+  const totalClases = d.total_clases || 0;
+  
+  document.getElementById('total-clases-stats').textContent = totalClases;
+  const tbody = document.getElementById('tbody-stats');
+  tbody.innerHTML = '';
+
+  stats.forEach(s => {
+    const color = s.porcentaje >= 75 ? 'text-secondary' : s.porcentaje >= 50 ? 'text-tertiary' : 'text-error';
+    tbody.innerHTML += `
+      <tr class="hover:bg-white/3 transition-colors">
+        <td class="px-4 py-2.5 text-xs">
+          <span class="font-semibold text-text-main">${s.nombre}</span><br>
+          <span class="text-text-muted font-mono">V-${s.cedula}</span>
+        </td>
+        <td class="px-4 py-2.5 text-center text-secondary font-bold text-xs">${s.presentes}</td>
+        <td class="px-4 py-2.5 text-center text-error font-bold text-xs">${s.ausentes}</td>
+        <td class="px-4 py-2.5 text-center text-tertiary font-bold text-xs">${s.retardos}</td>
+        <td class="px-4 py-2.5 text-center text-primary font-bold text-xs">${s.justificados}</td>
+        <td class="px-4 py-2.5 text-center">
+          <div class="flex items-center justify-center gap-2">
+            <div class="w-16 bg-surface-element rounded-full h-2 overflow-hidden">
+              <div class="h-full ${s.porcentaje >= 75 ? 'bg-secondary' : s.porcentaje >= 50 ? 'bg-tertiary' : 'bg-error'} rounded-full transition-all" style="width:${s.porcentaje}%"></div>
+            </div>
+            <span class="text-xs font-bold ${color}">${s.porcentaje}%</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+</script>
+{% endblock %}

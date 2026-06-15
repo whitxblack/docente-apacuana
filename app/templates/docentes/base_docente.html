@@ -231,6 +231,24 @@
         }
       }
 
+      /* Profile Dropdown Resets (ignores parent #main-header color overrides) */
+      #profile-dropdown-menu {
+        background-color: var(--color-surface) !important;
+        border-color: var(--color-border) !important;
+      }
+      #profile-dropdown-menu, #profile-dropdown-menu * {
+        color: var(--color-text-main) !important;
+      }
+      #profile-dropdown-menu .text-text-muted, 
+      #profile-dropdown-menu .text-xs,
+      #profile-dropdown-menu .text-xs * {
+        color: var(--color-text-muted) !important;
+      }
+      #profile-dropdown-menu .text-error, 
+      #profile-dropdown-menu .text-error * {
+        color: var(--color-error, #EF4444) !important;
+      }
+
       /* ─── Customize Panel Drawer ─── */
       .customize-backdrop {
         position: fixed;
@@ -455,33 +473,61 @@
 
         <!-- Perfil y Acciones -->
         <div class="flex items-center gap-3">
-            <!-- Theme Toggle -->
-            <button onclick="ThemeManager.toggleTheme()" class="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-muted hover:text-primary hover:bg-surface-element transition-colors" title="Cambiar tema">
-                <span class="material-symbols-outlined text-xl" id="theme-toggle-icon">dark_mode</span>
-            </button>
+            <!-- Contenedor del Perfil y Menú Desplegable -->
+            <div class="relative ml-1">
+                <!-- Botón de Perfil Trigger -->
+                <button onclick="toggleProfileDropdown(event)" id="profile-dropdown-btn" class="flex items-center gap-3 pl-3 border-l border-border hover:opacity-80 transition-opacity focus:outline-none">
+                    <div class="hidden sm:block text-right">
+                        <p class="font-bold text-sm text-text-main leading-tight">{{ session.get('username', 'Docente') }}</p>
+                        <p class="text-xs text-text-muted">Administrador</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-surface-element border border-border flex items-center justify-center overflow-hidden">
+                        {% if session.get('foto_perfil') %}
+                        <img src="{{ session.foto_perfil }}" alt="Perfil" class="w-full h-full object-cover">
+                        {% else %}
+                        <ion-icon name="person" class="text-xl text-text-muted"></ion-icon>
+                        {% endif %}
+                    </div>
+                </button>
 
-            <!-- Customize -->
-            <button onclick="CustomizePanel.toggle()" class="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-muted hover:text-primary hover:bg-surface-element transition-colors" title="Personalizar">
-                <span class="material-symbols-outlined text-xl">palette</span>
-            </button>
+                <!-- Menú Desplegable -->
+                <div id="profile-dropdown-menu" class="hidden absolute right-0 top-14 w-64 bg-surface rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] border border-border p-2 z-50 transform origin-top-right transition-all">
+                    <!-- Nombre y Rol -->
+                    <div class="px-3 py-3 border-b border-border mb-1">
+                        <p class="font-semibold text-text-main text-sm">{{ session.get('username', 'Docente') }}</p>
+                        <p class="text-xs text-text-muted">Administrador</p>
+                    </div>
+                    
+                    <!-- Personalizar -->
+                    <button onclick="CustomizePanel.toggle(); closeProfileDropdown()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-element transition-colors text-text-main text-left">
+                        <span class="material-symbols-outlined text-[20px]">palette</span>
+                        <span class="text-sm font-medium">Personalización</span>
+                    </button>
 
-            <button class="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-muted hover:text-primary hover:bg-surface-element transition-colors">
-                <ion-icon name="notifications-outline" class="text-xl"></ion-icon>
-            </button>
-            <a href="{{ url_for('auth.logout') }}" class="w-10 h-10 rounded-full border border-border flex items-center justify-center text-text-muted hover:text-error hover:bg-error/10 transition-colors hidden sm:flex">
-                <ion-icon name="log-out-outline" class="text-xl"></ion-icon>
-            </a>
-            <div class="flex items-center gap-3 pl-3 border-l border-border ml-1">
-                <div class="hidden sm:block text-right">
-                    <p class="font-bold text-sm text-text-main leading-tight">{{ session.get('username', 'Docente') }}</p>
-                    <p class="text-xs text-text-muted">Administrador</p>
-                </div>
-                <div class="w-10 h-10 rounded-full bg-surface-element border border-border flex items-center justify-center overflow-hidden">
-                    {% if session.get('foto_perfil') %}
-                    <img src="{{ session.foto_perfil }}" alt="Perfil" class="w-full h-full object-cover">
-                    {% else %}
-                    <ion-icon name="person" class="text-xl text-text-muted"></ion-icon>
-                    {% endif %}
+                    <!-- Notificaciones -->
+                    <button onclick="closeProfileDropdown()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-element transition-colors text-text-main text-left">
+                        <span class="material-symbols-outlined text-[20px]">notifications</span>
+                        <span class="text-sm font-medium">Notificaciones</span>
+                    </button>
+
+                    <!-- Tema Toggle Switch -->
+                    <div class="flex items-center justify-between px-3 py-2.5 mt-1 border-t border-border">
+                        <div class="flex items-center gap-3 text-text-main">
+                            <span class="material-symbols-outlined text-[20px]">contrast</span>
+                            <span class="text-sm font-medium">Tema</span>
+                        </div>
+                        
+                        <label class="relative inline-flex items-center cursor-pointer m-0">
+                            <input type="checkbox" id="dropdown-theme-checkbox" class="sr-only peer" onchange="ThemeManager.toggleTheme()">
+                            <div class="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer dark:bg-surface-element peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+
+                    <!-- Cerrar Sesión -->
+                    <a href="{{ url_for('auth.logout') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 border-t border-border rounded-xl hover:bg-error/10 text-error transition-colors">
+                        <span class="material-symbols-outlined text-[20px]">logout</span>
+                        <span class="text-sm font-medium">Cerrar sesión</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -631,6 +677,41 @@
             </div>
         </div>
     </div>
+
+    <script>
+      function toggleProfileDropdown(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('profile-dropdown-menu');
+        if (dropdown) {
+          const isHidden = dropdown.classList.toggle('hidden');
+          if (!isHidden) {
+            // Sync current theme state to the toggle checkbox
+            const checkbox = document.getElementById('dropdown-theme-checkbox');
+            if (checkbox) {
+              checkbox.checked = (document.documentElement.getAttribute('data-theme') === 'dark' || document.documentElement.classList.contains('dark'));
+            }
+          }
+        }
+      }
+
+      function closeProfileDropdown() {
+        const dropdown = document.getElementById('profile-dropdown-menu');
+        if (dropdown) {
+          dropdown.classList.add('hidden');
+        }
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('profile-dropdown-menu');
+        const trigger = document.getElementById('profile-dropdown-btn');
+        if (dropdown && trigger) {
+          if (!dropdown.contains(event.target) && !trigger.contains(event.target)) {
+            dropdown.classList.add('hidden');
+          }
+        }
+      });
+    </script>
 
     {% block extra_scripts %}{% endblock %}
 </body>

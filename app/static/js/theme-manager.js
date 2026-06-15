@@ -79,6 +79,12 @@ const ThemeManager = {
     // Update toggle button icon
     this._updateThemeIcon(resolved);
     
+    // Sync dropdown theme switch
+    const dropdownCheckbox = document.getElementById('dropdown-theme-checkbox');
+    if (dropdownCheckbox) {
+      dropdownCheckbox.checked = (resolved === 'dark');
+    }
+    
     // If no custom bar color is defined, fall back to theme default
     const customBarColor = localStorage.getItem(this.KEYS.barColor);
     if (!customBarColor) {

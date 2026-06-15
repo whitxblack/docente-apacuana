@@ -105,7 +105,8 @@ def estudiantes():
         data.append({
             'estudiante_id': e.id,
             'cedula': e.cedula_identidad,
-            'nombre': f"{e.apellidos}, {e.nombres}"
+            'nombre': f"{e.apellidos}, {e.nombres}",
+            'telefono_representante': getattr(e, 'telefono_representante', '') or ''
         })
         
     return jsonify({

@@ -553,6 +553,8 @@ function confirmarAusencia() {
     obsInput.value = obsText;
   }
   
+  const estId = _selectAusenciaActual.dataset.est;
+  
   _selectAusenciaActual.dataset.previousValue = 'AUSENTE';
   _selectAusenciaActual = null;
   
@@ -564,7 +566,27 @@ function confirmarAusencia() {
   content.classList.add('scale-95', 'opacity-0');
   setTimeout(() => {
     modal.classList.add('hidden');
-    toast('Notificación programada para el representante.', true);
+    
+    // Obtener información del estudiante
+    const estudianteInfo = _estudiantes.find(e => String(e.estudiante_id) === String(estId));
+    const telefono = estudianteInfo ? estudianteInfo.telefono_representante : '';
+    const nombreEstudiante = estudianteInfo ? estudianteInfo.nombre : '';
+    
+    if (telefono && telefono.trim() !== '') {
+      let numeroLimpio = telefono.replace(/\D/g, '');
+      if (numeroLimpio.startsWith('0')) {
+        numeroLimpio = '58' + numeroLimpio.substring(1);
+      } else if (!numeroLimpio.startsWith('58') && numeroLimpio.length === 10) {
+        numeroLimpio = '58' + numeroLimpio;
+      }
+      
+      const textoMensaje = `Saludos, le escribimos del Sistema Apacuana. Le informamos que el estudiante *${nombreEstudiante}* ha sido marcado como *AUSENTE* en la clase de hoy.\nMotivo registrado: ${motivo}\n${detalles ? 'Detalles: ' + detalles : ''}`;
+      const urlWhatsapp = `https://wa.me/${numeroLimpio}?text=${encodeURIComponent(textoMensaje)}`;
+      window.open(urlWhatsapp, '_blank');
+      toast('Abriendo WhatsApp para notificar al representante...', true);
+    } else {
+      toast('Ausencia registrada. El estudiante no tiene número de representante.', false);
+    }
   }, 300);
 }
 

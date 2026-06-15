@@ -76,7 +76,7 @@
       
       <div class="flex bg-surface-element p-1 rounded-xl border border-border">
         <button id="tab-pasar" onclick="cambiarTab('pasar')"
-                class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-text-main shadow-sm border border-border">
+                class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-surface text-text-main shadow-sm border border-border">
           Pasar Lista
         </button>
         <button id="tab-historial" onclick="cambiarTab('historial')"
@@ -245,6 +245,55 @@
     <p class="text-text-muted font-medium max-w-md mx-auto">Utiliza el filtro superior para elegir el período, la sección y la materia a la que deseas registrar la asistencia.</p>
   </div>
 </div>
+
+<!-- Modal Flujo Avanzado de Ausencias -->
+<div id="modal-ausencia" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-surface border border-border rounded-2xl w-full max-w-lg shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="modal-ausencia-content">
+    <div class="p-6 border-b border-border flex justify-between items-center bg-surface-element rounded-t-2xl">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-[#FCE8E6] flex items-center justify-center text-[#C5221F]">
+          <ion-icon name="alert-circle" class="text-xl"></ion-icon>
+        </div>
+        <div>
+          <h3 class="font-headline font-bold text-lg text-text-main">Justificación de Ausencia</h3>
+          <p class="text-sm text-text-muted">Notificación automática a representantes</p>
+        </div>
+      </div>
+      <button onclick="cerrarModalAusencia()" class="text-text-muted hover:bg-surface-element p-2 rounded-full transition-colors">
+        <ion-icon name="close" class="text-xl"></ion-icon>
+      </button>
+    </div>
+    
+    <div class="p-6 space-y-5">
+      <div class="bg-[#FEF7E0] border border-[#FDE293] p-4 rounded-xl text-sm text-[#B06000] flex gap-3">
+        <ion-icon name="information-circle" class="text-xl shrink-0"></ion-icon>
+        <p>Al confirmar esta ausencia, se enviará una notificación inmediata al representante del estudiante <span id="modal-estudiante-nombre" class="font-bold"></span>.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold text-text-muted mb-2">Motivo de la inasistencia (Obligatorio)</label>
+        <select id="modal-motivo" class="w-full bg-surface-element border border-border rounded-xl py-3 px-4 text-sm font-semibold text-text-main appearance-none focus:outline-none focus:border-primary transition-all">
+          <option value="">— Selecciona un motivo —</option>
+          <option value="Enfermedad">Enfermedad / Problema de salud</option>
+          <option value="Familiar">Situación Familiar</option>
+          <option value="Transporte">Problemas de Transporte</option>
+          <option value="Injustificada">Falta Injustificada</option>
+          <option value="Otro">Otro motivo</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-bold text-text-muted mb-2">Detalles Adicionales</label>
+        <textarea id="modal-detalles" rows="3" class="w-full bg-surface-element border border-border rounded-xl py-3 px-4 text-sm text-text-main focus:outline-none focus:border-primary transition-all" placeholder="Añade más información sobre la ausencia..."></textarea>
+      </div>
+    </div>
+
+    <div class="p-6 border-t border-border flex justify-end gap-3 bg-surface-element rounded-b-2xl">
+      <button onclick="cerrarModalAusencia()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-text-main bg-surface border border-border hover:bg-surface-hover transition-colors">Cancelar</button>
+      <button onclick="confirmarAusencia()" class="px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-[#C5221F] hover:bg-red-700 transition-colors shadow-md">Confirmar y Notificar</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -279,7 +328,7 @@ function cambiarTab(tab) {
     document.getElementById(`vista-${t}`).classList.toggle('hidden', t !== tab);
     const btn = document.getElementById(`tab-${t}`);
     if (t === tab) {
-      btn.className = 'px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-white text-text-main shadow-sm border border-border';
+      btn.className = 'px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-surface text-text-main shadow-sm border border-border';
     } else {
       btn.className = 'px-4 py-2 rounded-lg text-sm font-semibold transition-all text-text-muted hover:text-text-main border border-transparent';
     }
@@ -397,8 +446,8 @@ function renderTablaAsistencia() {
         </td>
         <td class="px-5 py-3 text-center">
           <div class="relative inline-block w-full">
-            <select data-est="${est.estudiante_id}" data-field="estado" onchange="actualizarContadores()"
-                    class="asist-estado w-full appearance-none bg-white border border-border rounded-lg py-2 px-3 text-xs font-bold focus:outline-none transition-all text-center cursor-pointer shadow-sm">
+            <select data-est="${est.estudiante_id}" data-nombre="${est.nombre}" data-field="estado" onchange="handleEstadoChange(this)"
+                    class="asist-estado w-full appearance-none bg-surface border border-border rounded-lg py-2 px-3 text-xs font-bold focus:outline-none transition-all text-center cursor-pointer shadow-sm">
               <option value="PRESENTE">✅ Presente</option>
               <option value="AUSENTE">❌ Ausente</option>
               <option value="RETARDO">⏰ Retardo</option>
@@ -409,11 +458,11 @@ function renderTablaAsistencia() {
         </td>
         <td class="px-5 py-3 text-center">
           <input type="time" data-est="${est.estudiante_id}" data-field="hora"
-                 class="asist-hora bg-white border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all w-24 text-center shadow-sm"/>
+                 class="asist-hora bg-surface border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all w-24 text-center shadow-sm"/>
         </td>
         <td class="px-5 py-3">
           <input type="text" data-est="${est.estudiante_id}" data-field="obs" maxlength="500" placeholder="Añadir nota..."
-                 class="asist-obs w-full bg-white border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all placeholder:text-text-muted/60 shadow-sm"/>
+                 class="asist-obs w-full bg-surface border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all placeholder:text-text-muted/60 shadow-sm"/>
         </td>
       </tr>
     `;
@@ -443,9 +492,88 @@ async function cargarRegistrosFecha() {
   actualizarContadores();
 }
 
+// ── Flujo Avanzado de Ausencias ──────────────────────────────────────────────
+let _selectAusenciaActual = null;
+let _estadoAnteriorAusencia = 'PRESENTE';
+
+function handleEstadoChange(selectElement) {
+  if (selectElement.value === 'AUSENTE') {
+    // Evitar contar inmediatamente, abrir modal
+    _selectAusenciaActual = selectElement;
+    _estadoAnteriorAusencia = selectElement.dataset.previousValue || 'PRESENTE';
+    
+    document.getElementById('modal-estudiante-nombre').textContent = selectElement.dataset.nombre;
+    document.getElementById('modal-motivo').value = '';
+    document.getElementById('modal-detalles').value = '';
+    
+    // Mostrar modal
+    const modal = document.getElementById('modal-ausencia');
+    const content = document.getElementById('modal-ausencia-content');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      content.classList.remove('scale-95', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  } else {
+    selectElement.dataset.previousValue = selectElement.value;
+    actualizarContadores();
+  }
+}
+
+function cerrarModalAusencia() {
+  const modal = document.getElementById('modal-ausencia');
+  const content = document.getElementById('modal-ausencia-content');
+  
+  content.classList.remove('scale-100', 'opacity-100');
+  content.classList.add('scale-95', 'opacity-0');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    // Revertir select si se cancela
+    if (_selectAusenciaActual) {
+      _selectAusenciaActual.value = _estadoAnteriorAusencia;
+      actualizarContadores();
+    }
+    _selectAusenciaActual = null;
+  }, 300);
+}
+
+function confirmarAusencia() {
+  const motivo = document.getElementById('modal-motivo').value;
+  if (!motivo) {
+    toast('Debes seleccionar un motivo para la ausencia', false);
+    return;
+  }
+  
+  const detalles = document.getElementById('modal-detalles').value;
+  const obsText = `[Notificado a representante] Motivo: ${motivo}. ${detalles}`;
+  
+  // Guardar en el input de observación
+  const obsInput = document.querySelector(`input[data-est="${_selectAusenciaActual.dataset.est}"][data-field="obs"]`);
+  if (obsInput) {
+    obsInput.value = obsText;
+  }
+  
+  _selectAusenciaActual.dataset.previousValue = 'AUSENTE';
+  _selectAusenciaActual = null;
+  
+  actualizarContadores();
+  
+  const modal = document.getElementById('modal-ausencia');
+  const content = document.getElementById('modal-ausencia-content');
+  content.classList.remove('scale-100', 'opacity-100');
+  content.classList.add('scale-95', 'opacity-0');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    toast('Notificación programada para el representante.', true);
+  }, 300);
+}
+
 // ── Marcar Todos ─────────────────────────────────────────────────────────────
 function marcarTodos(estado) {
-  document.querySelectorAll('.asist-estado').forEach(sel => sel.value = estado);
+  document.querySelectorAll('.asist-estado').forEach(sel => {
+    sel.value = estado;
+    sel.dataset.previousValue = estado;
+  });
   actualizarContadores();
 }
 

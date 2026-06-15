@@ -32,3 +32,8 @@ app/static/uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Scratch and test files
+scratch_db_test.py
+scratch*.py
+

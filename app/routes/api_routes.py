@@ -175,36 +175,38 @@ def evaluaciones():
 @api_bp.route('/evaluacion/crear/', methods=['POST'])
 @login_required
 def crear_evaluacion():
-    data = request.json
-    asignatura_id = data.get('asignatura_id')
-    periodo_id = data.get('periodo_id')
-    seccion = data.get('seccion')
-    nombre = data.get('nombre')
-    tipo = data.get('tipo', 'EXAMEN')
-    ponderacion = float(data.get('ponderacion', 0))
-    docente_id = session.get('usuario_id')
-    
-    if not all([asignatura_id, periodo_id, nombre]):
-        return jsonify({'error': 'Campos requeridos incompletos'}), 400
-        
-    if not (0 < ponderacion <= 100):
-        return jsonify({'error': 'La ponderación debe estar entre 1 y 100'}), 400
-        
-    evals = db.session.query(models.Evaluacion).filter_by(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
-    ).all()
-    suma_actual = sum([e.ponderacion for e in evals])
-    
-    if suma_actual + ponderacion > 100:
-        return jsonify({'error': f'Excedería el 100%. Disponible: {100 - suma_actual:.1f}%'}), 400
-        
-    cierre = db.session.query(models.PeriodoCierre).filter_by(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, cerrado=True
-    ).first()
-    if cierre:
-        return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
-        
     try:
+        data = request.json
+        asignatura_id = data.get('asignatura_id')
+        periodo_id = data.get('periodo_id')
+        seccion = data.get('seccion')
+        nombre = data.get('nombre')
+        tipo = data.get('tipo', 'EXAMEN')
+        # Handle case where ponderacion is explicitly null in JSON
+        pond_val = data.get('ponderacion')
+        ponderacion = float(pond_val) if pond_val is not None else 0.0
+        docente_id = session.get('usuario_id')
+        
+        if not all([asignatura_id, periodo_id, nombre]):
+            return jsonify({'error': 'Campos requeridos incompletos'}), 400
+            
+        if not (0 < ponderacion <= 100):
+            return jsonify({'error': 'La ponderación debe estar entre 1 y 100'}), 400
+            
+        evals = db.session.query(models.Evaluacion).filter_by(
+            asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
+        ).all()
+        suma_actual = sum([e.ponderacion for e in evals])
+        
+        if suma_actual + ponderacion > 100:
+            return jsonify({'error': f'Excedería el 100%. Disponible: {100 - suma_actual:.1f}%'}), 400
+            
+        cierre = db.session.query(models.PeriodoCierre).filter_by(
+            asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, cerrado=True
+        ).first()
+        if cierre:
+            return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
+            
         from datetime import datetime
         ev = models.Evaluacion(
             asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
@@ -215,83 +217,83 @@ def crear_evaluacion():
         )
         db.session.add(ev)
         db.session.commit()
+        return jsonify({'ok': True})
+        
     except Exception as e:
         db.session.rollback()
         print("\n🚨 ERROR EN CREAR EVALUACIÓN:")
         traceback.print_exc()
         error_detail = str(e).split('\n')[0].strip()
         return jsonify({'error': f'DB Error: {error_detail}', 'traceback': traceback.format_exc()}), 500
-        
-    return jsonify({'ok': True})
 
 @api_bp.route('/notas/guardar/', methods=['POST'])
 @login_required
 def guardar_notas():
-    from datetime import datetime
-    data = request.json
-    notas = data.get('notas', [])
-    es_borrador = data.get('es_borrador', True)
-    asignatura_id = data.get('asignatura_id')
-    periodo_id = data.get('periodo_id')
-    seccion = data.get('seccion')
-    ano_grado = data.get('ano_grado', 1)
-    docente_id = session.get('usuario_id')
-    
-    cierre = db.session.query(models.PeriodoCierre).filter_by(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, cerrado=True
-    ).first()
-    if cierre:
-        return jsonify({'error': 'Período cerrado. No se pueden guardar notas.'}), 403
-        
-    guardadas = 0
-    ahora = datetime.now()  # timestamp único para todo el batch
-    
-    for item in notas:
-        est_id = int(item['estudiante_id'])
-        eval_id = int(item['evaluacion_id'])
-        nota = float(item['nota'])
-        asistencia = item.get('asistencia', True)
-        observacion = item.get('observacion', '')
-        
-        insc = db.session.query(models.Inscripcion).filter_by(
-            estudiante_id=est_id, periodo_id=periodo_id
-        ).first()
-        if not insc:
-            insc = models.Inscripcion(
-                estudiante_id=est_id, periodo_id=periodo_id,
-                ano_grado=int(ano_grado), seccion=seccion
-            )
-            db.session.add(insc)
-            try:
-                db.session.commit()  # flush para obtener insc.id
-            except Exception:
-                db.session.rollback()
-                continue  # skip this note if inscription fails
-            
-        nota_obj = db.session.query(models.NotaEvaluacion).filter_by(
-            inscripcion_id=insc.id, evaluacion_id=eval_id
-        ).first()
-        
-        if nota_obj:
-            # UPDATE: refresh all mutable fields + always update fecha_registro
-            nota_obj.nota = nota
-            nota_obj.asistencia = asistencia
-            nota_obj.observacion = observacion
-            nota_obj.es_borrador = es_borrador
-            nota_obj.registrado_por_id = docente_id
-            nota_obj.fecha_registro = ahora
-        else:
-            # INSERT: set fecha_registro explicitly to avoid NOT NULL violation
-            nota_obj = models.NotaEvaluacion(
-                inscripcion_id=insc.id, evaluacion_id=eval_id,
-                nota=nota, asistencia=asistencia, observacion=observacion,
-                es_borrador=es_borrador, registrado_por_id=docente_id,
-                fecha_registro=ahora
-            )
-            db.session.add(nota_obj)
-        guardadas += 1
-        
     try:
+        from datetime import datetime
+        data = request.json
+        notas = data.get('notas', [])
+        es_borrador = data.get('es_borrador', True)
+        asignatura_id = data.get('asignatura_id')
+        periodo_id = data.get('periodo_id')
+        seccion = data.get('seccion')
+        ano_grado = data.get('ano_grado', 1)
+        docente_id = session.get('usuario_id')
+        
+        cierre = db.session.query(models.PeriodoCierre).filter_by(
+            asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, cerrado=True
+        ).first()
+        if cierre:
+            return jsonify({'error': 'Período cerrado. No se pueden guardar notas.'}), 403
+            
+        guardadas = 0
+        ahora = datetime.now()  # timestamp único para todo el batch
+        
+        for item in notas:
+            est_id = int(item['estudiante_id'])
+            eval_id = int(item['evaluacion_id'])
+            nota = float(item['nota'])
+            asistencia = item.get('asistencia', True)
+            observacion = item.get('observacion', '')
+            
+            insc = db.session.query(models.Inscripcion).filter_by(
+                estudiante_id=est_id, periodo_id=periodo_id
+            ).first()
+            if not insc:
+                insc = models.Inscripcion(
+                    estudiante_id=est_id, periodo_id=periodo_id,
+                    ano_grado=int(ano_grado), seccion=seccion
+                )
+                db.session.add(insc)
+                try:
+                    db.session.commit()  # flush para obtener insc.id
+                except Exception:
+                    db.session.rollback()
+                    continue  # skip this note if inscription fails
+                
+            nota_obj = db.session.query(models.NotaEvaluacion).filter_by(
+                inscripcion_id=insc.id, evaluacion_id=eval_id
+            ).first()
+            
+            if nota_obj:
+                # UPDATE: refresh all mutable fields + always update fecha_registro
+                nota_obj.nota = nota
+                nota_obj.asistencia = asistencia
+                nota_obj.observacion = observacion
+                nota_obj.es_borrador = es_borrador
+                nota_obj.registrado_por_id = docente_id
+                nota_obj.fecha_registro = ahora
+            else:
+                # INSERT: set fecha_registro explicitly to avoid NOT NULL violation
+                nota_obj = models.NotaEvaluacion(
+                    inscripcion_id=insc.id, evaluacion_id=eval_id,
+                    nota=nota, asistencia=asistencia, observacion=observacion,
+                    es_borrador=es_borrador, registrado_por_id=docente_id,
+                    fecha_registro=ahora
+                )
+                db.session.add(nota_obj)
+            guardadas += 1
+            
         db.session.commit()
     except Exception as e:
         db.session.rollback()

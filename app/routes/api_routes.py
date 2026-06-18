@@ -84,18 +84,23 @@ def estudiantes():
         models.Estudiante.activo == True
     ).order_by(models.Estudiante.apellidos, models.Estudiante.nombres).all()
     
-    # Lazy enrollment (asegurar inscripciones)
+    # Lazy enrollment: create inscriptions for students not yet enrolled this period
+    nuevas = []
     for e in estudiantes_db:
         insc = db.session.query(models.Inscripcion).filter_by(
             estudiante_id=e.id, periodo_id=periodo_id
         ).first()
         if not insc:
-            nueva_insc = models.Inscripcion(
+            nuevas.append(models.Inscripcion(
                 estudiante_id=e.id, periodo_id=periodo_id,
                 ano_grado=int(ano_grado), seccion=seccion
-            )
-            db.session.add(nueva_insc)
-    db.session.commit()
+            ))
+    if nuevas:
+        try:
+            db.session.bulk_save_objects(nuevas)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()  # Don't let a duplicate key poison the session
     
     cierre = db.session.query(models.PeriodoCierre).filter_by(
         asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion
@@ -199,9 +204,13 @@ def crear_evaluacion():
         return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
         
     try:
+        from datetime import datetime
         ev = models.Evaluacion(
             asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
-            nombre=nombre, tipo=tipo, ponderacion=ponderacion, creado_por_id=docente_id
+            nombre=nombre, tipo=tipo, ponderacion=ponderacion,
+            creado_por_id=docente_id,
+            fecha_creacion=datetime.now(),
+            activa=True
         )
         db.session.add(ev)
         db.session.commit()

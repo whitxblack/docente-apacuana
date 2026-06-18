@@ -138,11 +138,13 @@ const ThemeManager = {
         const g = parseInt(hex.substring(2,4), 16);
         const b = parseInt(hex.substring(4,6), 16);
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-        if (brightness > 200) { // Light color navbar
-          textColor = 'var(--color-text-main)';
-          textMutedColor = 'var(--color-text-muted)';
-          borderHex = 'var(--color-border)';
-          elementBg = 'var(--color-surface-element)';
+        if (brightness > 200) { // Light color navbar → always use absolute dark values
+          // IMPORTANT: Do NOT use var(--color-text-main) here — in dark theme that
+          // variable resolves to #FAFAFA (white), making text invisible on white bars.
+          textColor = '#111827';
+          textMutedColor = '#6B7280';
+          borderHex = '#E5E7EB';
+          elementBg = '#F9FAFB';
           elementHover = 'rgba(0, 0, 0, 0.05)';
           textShadow = '2px 2px 4px rgba(0, 0, 0, 0.6)';
         }
@@ -154,6 +156,7 @@ const ThemeManager = {
     document.documentElement.style.setProperty('--navbar-border', borderHex);
     document.documentElement.style.setProperty('--navbar-element-bg', elementBg);
     document.documentElement.style.setProperty('--navbar-element-hover', elementHover);
+    document.documentElement.style.setProperty('--navbar-text-shadow', textShadow);
     
     if (save) localStorage.setItem(this.KEYS.barColor, color);
   },

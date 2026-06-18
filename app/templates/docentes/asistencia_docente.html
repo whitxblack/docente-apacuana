@@ -301,6 +301,24 @@
 let _periodoId = null, _anoGrado = null, _seccion = null, _asignaturaId = null;
 let _estudiantes = [];
 
+function actualizarAMPM(input) {
+  const estId = input.dataset.est;
+  const val = input.value;
+  const span = document.getElementById(`ampm-${estId}`);
+  if (!span) return;
+  if (!val) {
+    span.textContent = '';
+    return;
+  }
+  const parts = val.split(':');
+  if (parts.length >= 2) {
+    const h = parseInt(parts[0], 10);
+    span.textContent = h >= 12 ? 'P.M.' : 'A.M.';
+  } else {
+    span.textContent = '';
+  }
+}
+
 function habilitarCard(id) {
   document.getElementById(id).classList.remove('opacity-50');
   document.getElementById(id).querySelector('select').disabled = false;
@@ -457,8 +475,11 @@ function renderTablaAsistencia() {
           </div>
         </td>
         <td class="px-5 py-3 text-center">
-          <input type="time" data-est="${est.estudiante_id}" data-field="hora"
-                 class="asist-hora bg-surface border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all w-24 text-center shadow-sm"/>
+          <div class="flex items-center justify-center gap-1.5">
+            <input type="time" data-est="${est.estudiante_id}" data-field="hora" onchange="actualizarAMPM(this)" oninput="actualizarAMPM(this)"
+                   class="asist-hora bg-surface border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all w-24 text-center shadow-sm"/>
+            <span class="text-xs font-bold text-text-muted w-10 text-left" id="ampm-${est.estudiante_id}"></span>
+          </div>
         </td>
         <td class="px-5 py-3">
           <input type="text" data-est="${est.estudiante_id}" data-field="obs" maxlength="500" placeholder="Añadir nota..."
@@ -486,7 +507,13 @@ async function cargarRegistrosFecha() {
     const obsEl = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="obs"]`);
     
     if (selectEl) selectEl.value = reg ? reg.estado : 'PRESENTE';
-    if (horaEl) horaEl.value = reg && reg.hora_llegada ? reg.hora_llegada : '';
+    if (horaEl) {
+      horaEl.value = reg && reg.hora_llegada ? reg.hora_llegada : '';
+      const ampmSpan = document.getElementById(`ampm-${est.estudiante_id}`);
+      if (ampmSpan) {
+        ampmSpan.textContent = reg && reg.ampm ? reg.ampm : '';
+      }
+    }
     if (obsEl) obsEl.value = reg ? reg.observacion : '';
   });
   actualizarContadores();

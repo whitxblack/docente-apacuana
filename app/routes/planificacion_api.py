@@ -19,13 +19,13 @@ def get_temas():
         return jsonify({'error': 'Parámetros incompletos'}), 400
         
     temas_db = db.session.query(models.TemaClase).filter_by(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activo=True
+        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion
     ).order_by(models.TemaClase.fecha_creacion).all()
     
     temas_data = []
     for tema in temas_db:
-        materiales = db.session.query(models.MaterialApoyo).filter_by(tema_id=tema.id, activo=True).all()
-        tareas = db.session.query(models.TareaDocente).filter_by(tema_id=tema.id, activa=True).all()
+        materiales = db.session.query(models.MaterialApoyo).filter_by(tema_id=tema.id).all()
+        tareas = db.session.query(models.TareaDocente).filter_by(tema_id=tema.id).all()
         
         m_data = [{
             'id': m.id,
@@ -77,7 +77,8 @@ def crear_tema():
         
     tema = models.TemaClase(
         asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
-        titulo=titulo, descripcion=descripcion, fecha_programada=fp, creado_por_id=docente_id
+        titulo=titulo, descripcion=descripcion, fecha_programada=fp, creado_por_id=docente_id,
+        fecha_creacion=datetime.now()
     )
     db.session.add(tema)
     db.session.commit()
@@ -96,7 +97,10 @@ def eliminar_tema():
         if cierre:
             return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
             
-        tema.activo = False
+        # Delete related materials and tasks first to avoid FK constraints issues
+        db.session.query(models.MaterialApoyo).filter_by(tema_id=tema.id).delete()
+        db.session.query(models.TareaDocente).filter_by(tema_id=tema.id).delete()
+        db.session.delete(tema)
         db.session.commit()
         return jsonify({'ok': True})
     return jsonify({'error': 'Tema no encontrado'}), 404
@@ -129,7 +133,8 @@ def subir_material():
         archivo.save(os.path.join(upload_folder, filename))
         
     mat = models.MaterialApoyo(
-        tema_id=tema_id, titulo=titulo, enlace=enlace, archivo=file_path, subido_por_id=docente_id
+        tema_id=tema_id, titulo=titulo, enlace=enlace, archivo=file_path,
+        fecha_subida=datetime.now()
     )
     db.session.add(mat)
     db.session.commit()
@@ -148,7 +153,7 @@ def eliminar_material():
         if cierre:
             return jsonify({'error': 'Período cerrado.'}), 403
             
-        mat.activo = False
+        db.session.delete(mat)
         db.session.commit()
         return jsonify({'ok': True})
     return jsonify({'error': 'No encontrado'}), 404
@@ -176,7 +181,8 @@ def crear_tarea():
     fe = datetime.strptime(fecha_entrega, '%Y-%m-%dT%H:%M') if fecha_entrega else None
         
     tarea = models.TareaDocente(
-        tema_id=tema_id, titulo=titulo, instrucciones=instrucciones, fecha_entrega=fe, creada_por_id=docente_id
+        tema_id=tema_id, titulo=titulo, instrucciones=instrucciones, fecha_entrega=fe,
+        fecha_creacion=datetime.now()
     )
     db.session.add(tarea)
     db.session.commit()
@@ -195,7 +201,7 @@ def eliminar_tarea():
         if cierre:
             return jsonify({'error': 'Período cerrado.'}), 403
             
-        tarea.activa = False
+        db.session.delete(tarea)
         db.session.commit()
         return jsonify({'ok': True})
     return jsonify({'error': 'No encontrado'}), 404

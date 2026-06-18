@@ -693,10 +693,6 @@ async function guardarNotas(esBorrador) {
     console.error('guardarNotas error:', err);
     toast('Error de conexión al guardar notas. Verifica tu red e intenta nuevamente.', false);
   }
-} catch (e) {
-  toast('Error de conexión con el servidor. Inténtalo de nuevo.', false);
-  console.error(e);
-}
 }
 
 

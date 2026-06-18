@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session, current_app
 from app import db
-from app.models.base import TemaClase, MaterialApoyo, TareaDocente, PeriodoCierre
+import app.models.base as models
 from app.services.auth_service import login_required
 import os
 from werkzeug.utils import secure_filename
@@ -18,14 +18,14 @@ def get_temas():
     if not all([asignatura_id, periodo_id, seccion]):
         return jsonify({'error': 'Parámetros incompletos'}), 400
         
-    temas_db = db.session.query(TemaClase).filter_by(
+    temas_db = db.session.query(models.TemaClase).filter_by(
         asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activo=True
-    ).order_by(TemaClase.fecha_creacion).all()
+    ).order_by(models.TemaClase.fecha_creacion).all()
     
     temas_data = []
     for tema in temas_db:
-        materiales = db.session.query(MaterialApoyo).filter_by(tema_id=tema.id, activo=True).all()
-        tareas = db.session.query(TareaDocente).filter_by(tema_id=tema.id, activa=True).all()
+        materiales = db.session.query(models.MaterialApoyo).filter_by(tema_id=tema.id, activo=True).all()
+        tareas = db.session.query(models.TareaDocente).filter_by(tema_id=tema.id, activa=True).all()
         
         m_data = [{
             'id': m.id,
@@ -67,7 +67,7 @@ def crear_tema():
     if not all([asignatura_id, periodo_id, seccion, titulo]):
         return jsonify({'error': 'Campos requeridos incompletos'}), 400
         
-    cierre = db.session.query(PeriodoCierre).filter_by(
+    cierre = db.session.query(models.PeriodoCierre).filter_by(
         asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, cerrado=True
     ).first()
     if cierre:
@@ -75,7 +75,7 @@ def crear_tema():
         
     fp = datetime.strptime(fecha_programada, '%Y-%m-%d') if fecha_programada else None
         
-    tema = TemaClase(
+    tema = models.TemaClase(
         asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
         titulo=titulo, descripcion=descripcion, fecha_programada=fp, creado_por_id=docente_id
     )
@@ -88,9 +88,9 @@ def crear_tema():
 @login_required
 def eliminar_tema():
     tema_id = request.json.get('tema_id')
-    tema = db.session.query(TemaClase).get(tema_id)
+    tema = db.session.query(models.TemaClase).get(tema_id)
     if tema:
-        cierre = db.session.query(PeriodoCierre).filter_by(
+        cierre = db.session.query(models.PeriodoCierre).filter_by(
             asignatura_id=tema.asignatura_id, periodo_id=tema.periodo_id, seccion=tema.seccion, cerrado=True
         ).first()
         if cierre:
@@ -110,11 +110,11 @@ def subir_material():
     archivo = request.files.get('archivo')
     docente_id = session.get('usuario_id')
     
-    tema = db.session.query(TemaClase).get(tema_id)
+    tema = db.session.query(models.TemaClase).get(tema_id)
     if not tema:
         return jsonify({'error': 'Tema no encontrado'}), 404
         
-    cierre = db.session.query(PeriodoCierre).filter_by(
+    cierre = db.session.query(models.PeriodoCierre).filter_by(
         asignatura_id=tema.asignatura_id, periodo_id=tema.periodo_id, seccion=tema.seccion, cerrado=True
     ).first()
     if cierre:
@@ -128,7 +128,7 @@ def subir_material():
         file_path = f"materiales/{filename}"
         archivo.save(os.path.join(upload_folder, filename))
         
-    mat = MaterialApoyo(
+    mat = models.MaterialApoyo(
         tema_id=tema_id, titulo=titulo, enlace=enlace, archivo=file_path, subido_por_id=docente_id
     )
     db.session.add(mat)
@@ -139,10 +139,10 @@ def subir_material():
 @login_required
 def eliminar_material():
     material_id = request.json.get('material_id')
-    mat = db.session.query(MaterialApoyo).get(material_id)
+    mat = db.session.query(models.MaterialApoyo).get(material_id)
     if mat:
-        tema = db.session.query(TemaClase).get(mat.tema_id)
-        cierre = db.session.query(PeriodoCierre).filter_by(
+        tema = db.session.query(models.TemaClase).get(mat.tema_id)
+        cierre = db.session.query(models.PeriodoCierre).filter_by(
             asignatura_id=tema.asignatura_id, periodo_id=tema.periodo_id, seccion=tema.seccion, cerrado=True
         ).first()
         if cierre:
@@ -163,11 +163,11 @@ def crear_tarea():
     fecha_entrega = data.get('fecha_entrega')
     docente_id = session.get('usuario_id')
     
-    tema = db.session.query(TemaClase).get(tema_id)
+    tema = db.session.query(models.TemaClase).get(tema_id)
     if not tema:
         return jsonify({'error': 'Tema no encontrado'}), 404
         
-    cierre = db.session.query(PeriodoCierre).filter_by(
+    cierre = db.session.query(models.PeriodoCierre).filter_by(
         asignatura_id=tema.asignatura_id, periodo_id=tema.periodo_id, seccion=tema.seccion, cerrado=True
     ).first()
     if cierre:
@@ -175,7 +175,7 @@ def crear_tarea():
         
     fe = datetime.strptime(fecha_entrega, '%Y-%m-%dT%H:%M') if fecha_entrega else None
         
-    tarea = TareaDocente(
+    tarea = models.TareaDocente(
         tema_id=tema_id, titulo=titulo, instrucciones=instrucciones, fecha_entrega=fe, creada_por_id=docente_id
     )
     db.session.add(tarea)
@@ -186,10 +186,10 @@ def crear_tarea():
 @login_required
 def eliminar_tarea():
     tarea_id = request.json.get('tarea_id')
-    tarea = db.session.query(TareaDocente).get(tarea_id)
+    tarea = db.session.query(models.TareaDocente).get(tarea_id)
     if tarea:
-        tema = db.session.query(TemaClase).get(tarea.tema_id)
-        cierre = db.session.query(PeriodoCierre).filter_by(
+        tema = db.session.query(models.TemaClase).get(tarea.tema_id)
+        cierre = db.session.query(models.PeriodoCierre).filter_by(
             asignatura_id=tema.asignatura_id, periodo_id=tema.periodo_id, seccion=tema.seccion, cerrado=True
         ).first()
         if cierre:
@@ -209,10 +209,10 @@ def editar_tarea():
     instrucciones = data.get('instrucciones')
     fecha_entrega = data.get('fecha_entrega')
     
-    tarea = db.session.query(TareaDocente).get(tarea_id)
+    tarea = db.session.query(models.TareaDocente).get(tarea_id)
     if tarea:
-        tema = db.session.query(TemaClase).get(tarea.tema_id)
-        cierre = db.session.query(PeriodoCierre).filter_by(
+        tema = db.session.query(models.TemaClase).get(tarea.tema_id)
+        cierre = db.session.query(models.PeriodoCierre).filter_by(
             asignatura_id=tema.asignatura_id, periodo_id=tema.periodo_id, seccion=tema.seccion, cerrado=True
         ).first()
         if cierre:

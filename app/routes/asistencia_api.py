@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from app import db
-from app.models.base import RegistroAsistencia, Estudiante, AsignacionDocente
+import app.models.base as models
 from app.services.auth_service import login_required
 from datetime import date, datetime
 from sqlalchemy import func, case
@@ -39,7 +39,7 @@ def registrar():
                 pass
         
         # Buscar registro existente (upsert)
-        existente = db.session.query(RegistroAsistencia).filter_by(
+        existente = db.session.query(models.RegistroAsistencia).filter_by(
             estudiante_id=est_id,
             asignatura_id=asignatura_id,
             periodo_id=periodo_id,
@@ -54,7 +54,7 @@ def registrar():
             existente.registrado_por_id = docente_id
             existente.hora_registro = datetime.now()
         else:
-            reg = RegistroAsistencia(
+            reg = models.RegistroAsistencia(
                 estudiante_id=est_id,
                 asignatura_id=asignatura_id,
                 periodo_id=periodo_id,
@@ -87,7 +87,7 @@ def obtener():
         
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
     
-    registros = db.session.query(RegistroAsistencia).filter_by(
+    registros = db.session.query(models.RegistroAsistencia).filter_by(
         asignatura_id=asignatura_id,
         periodo_id=periodo_id,
         seccion=seccion,
@@ -117,25 +117,25 @@ def historial():
         return jsonify({'error': 'Parámetros incompletos'}), 400
         
     fechas = db.session.query(
-        RegistroAsistencia.fecha,
-        func.count(RegistroAsistencia.id).label('total'),
+        models.RegistroAsistencia.fecha,
+        func.count(models.RegistroAsistencia.id).label('total'),
         func.sum(
-            case((RegistroAsistencia.estado == 'PRESENTE', 1), else_=0)
+            case((models.RegistroAsistencia.estado == 'PRESENTE', 1), else_=0)
         ).label('presentes'),
         func.sum(
-            case((RegistroAsistencia.estado == 'AUSENTE', 1), else_=0)
+            case((models.RegistroAsistencia.estado == 'AUSENTE', 1), else_=0)
         ).label('ausentes'),
         func.sum(
-            case((RegistroAsistencia.estado == 'RETARDO', 1), else_=0)
+            case((models.RegistroAsistencia.estado == 'RETARDO', 1), else_=0)
         ).label('retardos'),
         func.sum(
-            case((RegistroAsistencia.estado == 'JUSTIFICADO', 1), else_=0)
+            case((models.RegistroAsistencia.estado == 'JUSTIFICADO', 1), else_=0)
         ).label('justificados')
     ).filter(
-        RegistroAsistencia.asignatura_id == asignatura_id,
-        RegistroAsistencia.periodo_id == periodo_id,
-        RegistroAsistencia.seccion == seccion
-    ).group_by(RegistroAsistencia.fecha).order_by(RegistroAsistencia.fecha.desc()).all()
+        models.RegistroAsistencia.asignatura_id == asignatura_id,
+        models.RegistroAsistencia.periodo_id == periodo_id,
+        models.RegistroAsistencia.seccion == seccion
+    ).group_by(models.RegistroAsistencia.fecha).order_by(models.RegistroAsistencia.fecha.desc()).all()
     
     data = [{
         'fecha': f.fecha.strftime('%Y-%m-%d'),
@@ -162,31 +162,31 @@ def estadisticas():
         
     # Obtener total de clases registradas
     total_clases = db.session.query(
-        func.count(func.distinct(RegistroAsistencia.fecha))
+        func.count(func.distinct(models.RegistroAsistencia.fecha))
     ).filter(
-        RegistroAsistencia.asignatura_id == asignatura_id,
-        RegistroAsistencia.periodo_id == periodo_id,
-        RegistroAsistencia.seccion == seccion
+        models.RegistroAsistencia.asignatura_id == asignatura_id,
+        models.RegistroAsistencia.periodo_id == periodo_id,
+        models.RegistroAsistencia.seccion == seccion
     ).scalar() or 0
     
     # Obtener estudiantes de esa sección
-    estudiantes = db.session.query(Estudiante).filter(
-        Estudiante.ano_cursando == int(ano_grado),
-        Estudiante.seccion == seccion,
-        Estudiante.activo == True
-    ).order_by(Estudiante.apellidos, Estudiante.nombres).all()
+    estudiantes = db.session.query(models.Estudiante).filter(
+        models.Estudiante.ano_cursando == int(ano_grado),
+        models.Estudiante.seccion == seccion,
+        models.Estudiante.activo == True
+    ).order_by(models.Estudiante.apellidos, models.Estudiante.nombres).all()
     
     stats = []
     for est in estudiantes:
         regs = db.session.query(
-            RegistroAsistencia.estado,
-            func.count(RegistroAsistencia.id)
+            models.RegistroAsistencia.estado,
+            func.count(models.RegistroAsistencia.id)
         ).filter(
-            RegistroAsistencia.estudiante_id == est.id,
-            RegistroAsistencia.asignatura_id == asignatura_id,
-            RegistroAsistencia.periodo_id == periodo_id,
-            RegistroAsistencia.seccion == seccion
-        ).group_by(RegistroAsistencia.estado).all()
+            models.RegistroAsistencia.estudiante_id == est.id,
+            models.RegistroAsistencia.asignatura_id == asignatura_id,
+            models.RegistroAsistencia.periodo_id == periodo_id,
+            models.RegistroAsistencia.seccion == seccion
+        ).group_by(models.RegistroAsistencia.estado).all()
         
         conteo = {r[0]: r[1] for r in regs}
         presentes = conteo.get('PRESENTE', 0) + conteo.get('JUSTIFICADO', 0)

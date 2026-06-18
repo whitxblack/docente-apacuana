@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from app import db
-from app.models.base import AsignacionDocente, Asignatura, Estudiante, Inscripcion, Evaluacion, NotaEvaluacion, PeriodoCierre, PeriodoAcademico
+import app.models.base as models
 from app.services.auth_service import login_required
 # pyrefly: ignore [missing-import]
 from sqlalchemy import func
@@ -19,12 +19,12 @@ def combinaciones():
         return jsonify({'error': 'Periodo requerido'}), 400
         
     asignaciones = db.session.query(
-        AsignacionDocente.ano_grado, AsignacionDocente.seccion
+        models.AsignacionDocente.ano_grado, models.AsignacionDocente.seccion
     ).filter(
-        AsignacionDocente.docente_id == docente_id,
-        AsignacionDocente.periodo_id == periodo_id,
-        AsignacionDocente.activa == True
-    ).distinct().order_by(AsignacionDocente.ano_grado, AsignacionDocente.seccion).all()
+        models.AsignacionDocente.docente_id == docente_id,
+        models.AsignacionDocente.periodo_id == periodo_id,
+        models.AsignacionDocente.activa == True
+    ).distinct().order_by(models.AsignacionDocente.ano_grado, models.AsignacionDocente.seccion).all()
     
     data = []
     for a in asignaciones:
@@ -48,14 +48,14 @@ def materias_combo():
     if not all([periodo_id, ano_grado, seccion]):
         return jsonify({'error': 'Parámetros incompletos'}), 400
         
-    asignaciones = db.session.query(AsignacionDocente, Asignatura).join(
-        Asignatura, AsignacionDocente.asignatura_id == Asignatura.id
+    asignaciones = db.session.query(models.AsignacionDocente, models.Asignatura).join(
+        models.Asignatura, models.AsignacionDocente.asignatura_id == models.Asignatura.id
     ).filter(
-        AsignacionDocente.docente_id == docente_id,
-        AsignacionDocente.periodo_id == periodo_id,
-        AsignacionDocente.ano_grado == int(ano_grado),
-        AsignacionDocente.seccion == seccion,
-        AsignacionDocente.activa == True
+        models.AsignacionDocente.docente_id == docente_id,
+        models.AsignacionDocente.periodo_id == periodo_id,
+        models.AsignacionDocente.ano_grado == int(ano_grado),
+        models.AsignacionDocente.seccion == seccion,
+        models.AsignacionDocente.activa == True
     ).all()
     
     data = []
@@ -78,26 +78,26 @@ def estudiantes():
     if not all([periodo_id, ano_grado, seccion, asignatura_id]):
         return jsonify({'error': 'Parámetros incompletos'}), 400
         
-    estudiantes_db = db.session.query(Estudiante).filter(
-        Estudiante.ano_cursando == int(ano_grado),
-        Estudiante.seccion == seccion,
-        Estudiante.activo == True
-    ).order_by(Estudiante.apellidos, Estudiante.nombres).all()
+    estudiantes_db = db.session.query(models.Estudiante).filter(
+        models.Estudiante.ano_cursando == int(ano_grado),
+        models.Estudiante.seccion == seccion,
+        models.Estudiante.activo == True
+    ).order_by(models.Estudiante.apellidos, models.Estudiante.nombres).all()
     
     # Lazy enrollment (asegurar inscripciones)
     for e in estudiantes_db:
-        insc = db.session.query(Inscripcion).filter_by(
+        insc = db.session.query(models.Inscripcion).filter_by(
             estudiante_id=e.id, periodo_id=periodo_id
         ).first()
         if not insc:
-            nueva_insc = Inscripcion(
+            nueva_insc = models.Inscripcion(
                 estudiante_id=e.id, periodo_id=periodo_id,
                 ano_grado=int(ano_grado), seccion=seccion
             )
             db.session.add(nueva_insc)
     db.session.commit()
     
-    cierre = db.session.query(PeriodoCierre).filter_by(
+    cierre = db.session.query(models.PeriodoCierre).filter_by(
         asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion
     ).first()
     
@@ -125,21 +125,21 @@ def evaluaciones():
     if not all([asignatura_id, periodo_id, seccion]):
         return jsonify({'error': 'Parámetros incompletos'}), 400
         
-    evaluaciones_db = db.session.query(Evaluacion).filter(
-        Evaluacion.asignatura_id == asignatura_id,
-        Evaluacion.periodo_id == periodo_id,
-        Evaluacion.seccion == seccion,
-        Evaluacion.activa == True
-    ).order_by(Evaluacion.fecha_creacion).all()
+    evaluaciones_db = db.session.query(models.Evaluacion).filter(
+        models.Evaluacion.asignatura_id == asignatura_id,
+        models.Evaluacion.periodo_id == periodo_id,
+        models.Evaluacion.seccion == seccion,
+        models.Evaluacion.activa == True
+    ).order_by(models.Evaluacion.fecha_creacion).all()
     
-    notas_qs = db.session.query(NotaEvaluacion, Inscripcion).join(
-        Inscripcion, NotaEvaluacion.inscripcion_id == Inscripcion.id
+    notas_qs = db.session.query(models.NotaEvaluacion, models.Inscripcion).join(
+        models.Inscripcion, models.NotaEvaluacion.inscripcion_id == models.Inscripcion.id
     ).join(
-        Evaluacion, NotaEvaluacion.evaluacion_id == Evaluacion.id
+        models.Evaluacion, models.NotaEvaluacion.evaluacion_id == models.Evaluacion.id
     ).filter(
-        Evaluacion.asignatura_id == asignatura_id,
-        Evaluacion.periodo_id == periodo_id,
-        Evaluacion.seccion == seccion
+        models.Evaluacion.asignatura_id == asignatura_id,
+        models.Evaluacion.periodo_id == periodo_id,
+        models.Evaluacion.seccion == seccion
     ).all()
     
     notas_map = {}
@@ -184,39 +184,27 @@ def crear_evaluacion():
     if not (0 < ponderacion <= 100):
         return jsonify({'error': 'La ponderación debe estar entre 1 y 100'}), 400
         
-    evals = db.session.query(Evaluacion).filter_by(
-        asignatura_id=int(asignatura_id), periodo_id=int(periodo_id), seccion=seccion, activa=True
+    evals = db.session.query(models.Evaluacion).filter_by(
+        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
     ).all()
     suma_actual = sum([e.ponderacion for e in evals])
     
     if suma_actual + ponderacion > 100:
         return jsonify({'error': f'Excedería el 100%. Disponible: {100 - suma_actual:.1f}%'}), 400
         
-    cierre = db.session.query(PeriodoCierre).filter_by(
-        asignatura_id=int(asignatura_id), periodo_id=int(periodo_id), seccion=seccion, cerrado=True
+    cierre = db.session.query(models.PeriodoCierre).filter_by(
+        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, cerrado=True
     ).first()
     if cierre:
         return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
         
-    try:
-        from datetime import datetime
-        ev = Evaluacion(
-            asignatura_id=int(asignatura_id),
-            periodo_id=int(periodo_id),
-            seccion=seccion,
-            nombre=nombre,
-            tipo=tipo,
-            ponderacion=ponderacion,
-            creado_por_id=docente_id,
-            fecha_creacion=datetime.now(),
-            activa=True
-        )
-        db.session.add(ev)
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Error al guardar la evaluación en la base de datos: {str(e)}'}), 500
-        
+    ev = models.Evaluacion(
+        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
+        nombre=nombre, tipo=tipo, ponderacion=ponderacion, creado_por_id=docente_id
+    )
+    db.session.add(ev)
+    db.session.commit()
+    
     return jsonify({'ok': True})
 
 @api_bp.route('/notas/guardar/', methods=['POST'])
@@ -231,7 +219,7 @@ def guardar_notas():
     ano_grado = data.get('ano_grado', 1)
     docente_id = session.get('usuario_id')
     
-    cierre = db.session.query(PeriodoCierre).filter_by(
+    cierre = db.session.query(models.PeriodoCierre).filter_by(
         asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, cerrado=True
     ).first()
     if cierre:
@@ -245,15 +233,15 @@ def guardar_notas():
         asistencia = item.get('asistencia', True)
         observacion = item.get('observacion', '')
         
-        insc = db.session.query(Inscripcion).filter_by(
+        insc = db.session.query(models.Inscripcion).filter_by(
             estudiante_id=est_id, periodo_id=periodo_id
         ).first()
         if not insc:
-            insc = Inscripcion(estudiante_id=est_id, periodo_id=periodo_id, ano_grado=int(ano_grado), seccion=seccion)
+            insc = models.Inscripcion(estudiante_id=est_id, periodo_id=periodo_id, ano_grado=int(ano_grado), seccion=seccion)
             db.session.add(insc)
             db.session.commit()
             
-        nota_obj = db.session.query(NotaEvaluacion).filter_by(
+        nota_obj = db.session.query(models.NotaEvaluacion).filter_by(
             inscripcion_id=insc.id, evaluacion_id=eval_id
         ).first()
         
@@ -264,7 +252,7 @@ def guardar_notas():
             nota_obj.es_borrador = es_borrador
             nota_obj.registrado_por_id = docente_id
         else:
-            nota_obj = NotaEvaluacion(
+            nota_obj = models.NotaEvaluacion(
                 inscripcion_id=insc.id, evaluacion_id=eval_id,
                 nota=nota, asistencia=asistencia, observacion=observacion,
                 es_borrador=es_borrador, registrado_por_id=docente_id
@@ -328,7 +316,7 @@ def cerrar_periodo():
     seccion = data.get('seccion')
     docente_id = session.get('usuario_id')
     
-    cierre = db.session.query(PeriodoCierre).filter_by(
+    cierre = db.session.query(models.PeriodoCierre).filter_by(
         asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion
     ).first()
     

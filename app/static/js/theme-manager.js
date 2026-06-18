@@ -154,7 +154,6 @@ const ThemeManager = {
     document.documentElement.style.setProperty('--navbar-border', borderHex);
     document.documentElement.style.setProperty('--navbar-element-bg', elementBg);
     document.documentElement.style.setProperty('--navbar-element-hover', elementHover);
-    document.documentElement.style.setProperty('--navbar-text-shadow', textShadow);
     
     if (save) localStorage.setItem(this.KEYS.barColor, color);
   },

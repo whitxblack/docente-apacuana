@@ -231,22 +231,9 @@
         }
       }
 
-      /* Dynamic text outlines for customized navbar backgrounds */
-      #main-header .text-text-main, 
-      #main-header span,
-      #main-header p,
-      #main-header a,
-      #main-header ion-icon {
-        -webkit-text-stroke: 1px #fff;
-        text-stroke: 1px #fff;
-      }
-      [data-theme="dark"] #main-header .text-text-main, 
-      [data-theme="dark"] #main-header span,
-      [data-theme="dark"] #main-header p,
-      [data-theme="dark"] #main-header a,
-      [data-theme="dark"] #main-header ion-icon {
-        -webkit-text-stroke: 1px #000;
-        text-stroke: 1px #000;
+      /* Dynamic text shadow for customized navbar backgrounds */
+      .shadow-text-contrast {
+        text-shadow: var(--navbar-text-shadow, 0 1px 2px rgba(0, 0, 0, 0.15)) !important;
       }
 
       /* Profile Dropdown Resets (ignores parent #main-header color overrides) */
@@ -466,7 +453,7 @@
             <div class="w-10 h-10 flex items-center justify-center">
                 <img src="{{ url_for('static', filename='apacuana-logo.png') }}" alt="Apacuana" class="w-8 h-8 object-contain">
             </div>
-            <span class="font-headline font-extrabold text-lg text-text-main tracking-tight hidden sm:block">Portal Docente</span>
+            <span class="font-headline font-extrabold text-lg text-text-main tracking-tight hidden sm:block shadow-text-contrast">Portal Docente</span>
         </div>
 
         <!-- Navegación Principal (Escritorio) -->
@@ -496,8 +483,8 @@
                 <!-- Botón de Perfil Trigger -->
                 <button onclick="toggleProfileDropdown(event)" id="profile-dropdown-btn" class="flex items-center gap-3 pl-3 border-l border-border hover:opacity-80 transition-opacity focus:outline-none">
                     <div class="hidden sm:block text-right">
-                        <p class="font-bold text-sm text-text-main leading-tight">{{ session.get('username', 'Docente') }}</p>
-                        <p class="text-xs text-text-muted">Administrador</p>
+                        <p class="font-bold text-sm text-text-main leading-tight shadow-text-contrast">{{ session.get('username', 'Docente') }}</p>
+                        <p class="text-xs text-text-muted shadow-text-contrast">Administrador</p>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-surface-element border border-border flex items-center justify-center overflow-hidden">
                         {% if session.get('foto_perfil') %}

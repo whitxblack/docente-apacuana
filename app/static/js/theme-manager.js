@@ -129,6 +129,7 @@ const ThemeManager = {
     let borderHex = 'rgba(255, 255, 255, 0.15)';
     let elementBg = 'rgba(255, 255, 255, 0.08)';
     let elementHover = 'rgba(255, 255, 255, 0.12)';
+    let textShadow = '0 1px 2px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.5)';
     
     if (color) {
       const hex = color.replace('#', '');
@@ -143,6 +144,7 @@ const ThemeManager = {
           borderHex = 'var(--color-border)';
           elementBg = 'var(--color-surface-element)';
           elementHover = 'rgba(0, 0, 0, 0.05)';
+          textShadow = '0 1px 2px rgba(255, 255, 255, 0.8), 0 0 4px rgba(255, 255, 255, 0.5)';
         }
       }
     }
@@ -152,6 +154,7 @@ const ThemeManager = {
     document.documentElement.style.setProperty('--navbar-border', borderHex);
     document.documentElement.style.setProperty('--navbar-element-bg', elementBg);
     document.documentElement.style.setProperty('--navbar-element-hover', elementHover);
+    document.documentElement.style.setProperty('--navbar-text-shadow', textShadow);
     
     if (save) localStorage.setItem(this.KEYS.barColor, color);
   },

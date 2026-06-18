@@ -197,21 +197,25 @@ def crear_evaluacion():
     if cierre:
         return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
         
-    from datetime import datetime
-    ev = Evaluacion(
-        asignatura_id=int(asignatura_id),
-        periodo_id=int(periodo_id),
-        seccion=seccion,
-        nombre=nombre,
-        tipo=tipo,
-        ponderacion=ponderacion,
-        creado_por_id=docente_id,
-        fecha_creacion=datetime.now(),
-        activa=True
-    )
-    db.session.add(ev)
-    db.session.commit()
-    
+    try:
+        from datetime import datetime
+        ev = Evaluacion(
+            asignatura_id=int(asignatura_id),
+            periodo_id=int(periodo_id),
+            seccion=seccion,
+            nombre=nombre,
+            tipo=tipo,
+            ponderacion=ponderacion,
+            creado_por_id=docente_id,
+            fecha_creacion=datetime.now(),
+            activa=True
+        )
+        db.session.add(ev)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al guardar la evaluación en la base de datos: {str(e)}'}), 500
+        
     return jsonify({'ok': True})
 
 @api_bp.route('/notas/guardar/', methods=['POST'])

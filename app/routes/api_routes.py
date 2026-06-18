@@ -260,7 +260,42 @@ def guardar_notas():
         guardadas += 1
         
     db.session.commit()
-    return jsonify({'ok': True, 'guardadas': guardadas})
+    
+    # Recalculate averages for all students in this course/section/period
+    promedios = {}
+    evals = db.session.query(Evaluacion).filter_by(
+        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
+    ).all()
+    eval_pond = {e.id: float(e.ponderacion) for e in evals}
+    evals_ids = list(eval_pond.keys())
+    
+    if evals_ids:
+        inscripciones = db.session.query(Inscripcion).filter_by(
+            periodo_id=periodo_id, seccion=seccion, ano_grado=int(ano_grado)
+        ).all()
+        for insc in inscripciones:
+            notas_db = db.session.query(NotaEvaluacion).filter(
+                NotaEvaluacion.inscripcion_id == insc.id,
+                NotaEvaluacion.evaluacion_id.in_(evals_ids)
+            ).all()
+            
+            suma_notas = 0.0
+            suma_pond = 0.0
+            hay_notas = False
+            for n in notas_db:
+                pond = eval_pond.get(n.evaluacion_id, 0.0)
+                if n.nota is not None:
+                    suma_notas += float(n.nota) * (pond / 100.0)
+                    suma_pond += pond
+                    hay_notas = True
+            
+            if hay_notas and suma_pond > 0:
+                promedio = (suma_notas / (suma_pond / 100.0))
+                promedios[insc.estudiante_id] = round(promedio, 2)
+            else:
+                promedios[insc.estudiante_id] = None
+                
+    return jsonify({'ok': True, 'guardadas': guardadas, 'promedios': promedios})
 
 @api_bp.route('/periodo/cerrar/', methods=['POST'])
 @login_required

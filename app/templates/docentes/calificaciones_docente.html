@@ -68,7 +68,7 @@
         <p id="sub-tabla" class="text-xs text-text-muted mt-0.5"></p>
       </div>
       <div class="flex gap-2 flex-wrap">
-        <button onclick="abrirModalEval()"
+        <button onclick="abrirModalEval()" id="btn-nueva-eval"
                 class="flex items-center gap-2 bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
           <ion-icon name="add-circle-outline" class="text-base"></ion-icon> Nueva Evaluación
         </button>
@@ -236,6 +236,11 @@
 const CSRF = '{{ csrf_token|default("") }}';
 let _periodoId = null, _anoGrado = null, _seccion = null, _asignaturaId = null;
 let _evaluaciones = [], _estudiantes = [], _notas = {}, _cerrado = false;
+
+// Helper function to convert 0-20 grade and ponderation to points (scale 5% = 1 pt)
+function calcularPuntosEscala(nota, ponderacion) {
+  return (nota * ponderacion) / 100;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function habilitarCard(id) {
@@ -479,7 +484,7 @@ function renderTabla() {
                         focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all
                         [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"/>
           <div class="w-12 text-center text-xs font-bold text-primary bg-primary/5 border border-primary/10 rounded-lg py-1.5 px-1 flex items-center justify-center h-[34px]" id="ptos-${est.estudiante_id}-${ev.id}">
-             ${val !== '' ? (parseFloat(val)*ev.ponderacion/20).toFixed(1) : '-'}
+             ${val !== '' ? calcularPuntosEscala(parseFloat(val), ev.ponderacion).toFixed(1) : '-'}
           </div>
           <button onclick="abrirModalDetalles(${est.estudiante_id}, ${ev.id}, '${est.nombre.replace(/'/g, "\\'")}')" 
                   class="text-text-muted hover:text-primary transition-colors p-1 relative" ${_cerrado?'disabled':''}>
@@ -536,7 +541,7 @@ function calcularPuntos(input) {
   const val = parseFloat(input.value);
   const target = document.getElementById(`ptos-${est}-${evalId}`);
   if (!isNaN(val) && val >= 0 && val <= 20 && input.value !== '') {
-    target.textContent = (val * pond / 20).toFixed(1);
+    target.textContent = calcularPuntosEscala(val, pond).toFixed(1);
   } else {
     target.textContent = '-';
   }
@@ -558,7 +563,7 @@ function calcularFilaPorEstudiante(estId) {
   const cel = document.getElementById(`prom-${estId}`);
   if (!hayNotas) { cel.textContent = '–'; return; }
 
-  const promedio = sumaPond > 0 ? (sumaNotas / sumaPond) * 20 : 0;
+  const promedio = sumaPond > 0 ? (sumaNotas / sumaPond) * 100 : 0;
   cel.textContent = promedio.toFixed(2);
   cel.className = `px-4 py-2.5 text-right font-bold ${promedio >= 10 ? 'text-secondary' : 'text-error'}`;
 }
@@ -643,6 +648,25 @@ async function guardarNotas(esBorrador) {
   const d = await r.json();
   if (d.ok) {
     toast(`${d.guardadas} nota(s) ${esBorrador ? 'guardadas como borrador' : 'confirmadas definitivamente'}.`);
+    
+    // Update the averages in the DOM if returned from server
+    if (d.promedios) {
+      Object.keys(d.promedios).forEach(estId => {
+        const promVal = d.promedios[estId];
+        const cel = document.getElementById(`prom-${estId}`);
+        if (cel) {
+          if (promVal === null || promVal === undefined) {
+            cel.textContent = '–';
+            cel.className = "px-4 py-2.5 text-right font-bold text-text-muted";
+          } else {
+            const promNum = parseFloat(promVal);
+            cel.textContent = promNum.toFixed(2);
+            cel.className = `px-4 py-2.5 text-right font-bold ${promNum >= 10 ? 'text-secondary' : 'text-error'}`;
+          }
+        }
+      });
+    }
+    
     if (!esBorrador) cargarTabla(); 
   } else {
     toast(d.error || 'Error al guardar.', false);
@@ -666,8 +690,17 @@ async function cerrarPeriodo() {
 // ── Modal Evaluaciones ────────────────────────────────────────────────────
 function abrirModalEval() {
   if (_cerrado) { toast('El período está cerrado.', false); return; }
+  
+  // Calculate remaining ponderation
+  const sumaPondText = document.getElementById('txt-pond').textContent;
+  const suma = parseFloat(sumaPondText.split('/')[0].trim()) || 0;
+  if (suma >= 100) {
+    toast("No puedes crear una nueva evaluación porque se ha alcanzado el 100% del porcentaje asignado a la materia.", false);
+    return;
+  }
+  
   document.getElementById('modal-eval').classList.remove('hidden');
-  const disp = 100 - (document.getElementById('txt-pond').textContent.split('/')[0].trim().replace('%','') || 0);
+  const disp = 100 - suma;
   document.getElementById('ev-disponible').textContent = `Disponible: ${disp.toFixed(1)}%`;
   document.getElementById('eval-error').classList.add('hidden');
   document.getElementById('ev-nombre').value = '';
@@ -705,6 +738,17 @@ function actualizarBarra(suma) {
   document.getElementById('barra-pond').style.width = pct + '%';
   document.getElementById('barra-pond').className = `h-full transition-all rounded-full ${pct >= 100 ? 'bg-secondary' : 'bg-primary'}`;
   document.getElementById('txt-pond').textContent = `${suma.toFixed(1)} / 100%`;
+  
+  const btn = document.getElementById('btn-nueva-eval');
+  if (btn) {
+    if (suma >= 100) {
+      btn.className = "flex items-center gap-2 bg-gray-500/10 text-gray-500 border border-gray-500/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-not-allowed opacity-50";
+      btn.innerHTML = `<ion-icon name="ban" class="text-base"></ion-icon> Sin porcentaje disponible`;
+    } else {
+      btn.className = "flex items-center gap-2 bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all";
+      btn.innerHTML = `<ion-icon name="add-circle-outline" class="text-base"></ion-icon> Nueva Evaluación`;
+    }
+  }
 }
 
 // Cerrar modal al hacer clic fuera

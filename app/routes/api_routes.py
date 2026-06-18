@@ -196,7 +196,7 @@ def crear_evaluacion():
         evals = db.session.query(models.Evaluacion).filter_by(
             asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
         ).all()
-        suma_actual = sum([e.ponderacion for e in evals])
+        suma_actual = sum([float(e.ponderacion) for e in evals])
         
         if suma_actual + ponderacion > 100:
             return jsonify({'error': f'Excedería el 100%. Disponible: {100 - suma_actual:.1f}%'}), 400

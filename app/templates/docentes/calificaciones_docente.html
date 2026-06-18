@@ -236,6 +236,7 @@
 const CSRF = '{{ csrf_token|default("") }}';
 let _periodoId = null, _anoGrado = null, _seccion = null, _asignaturaId = null;
 let _evaluaciones = [], _estudiantes = [], _notas = {}, _cerrado = false;
+let _sumaPonderacion = 0;
 
 // Helper function to convert 0-20 grade and ponderation to points (scale 5% = 1 pt)
 function calcularPuntosEscala(nota, ponderacion) {
@@ -691,16 +692,13 @@ async function cerrarPeriodo() {
 function abrirModalEval() {
   if (_cerrado) { toast('El período está cerrado.', false); return; }
   
-  // Calculate remaining ponderation
-  const sumaPondText = document.getElementById('txt-pond').textContent;
-  const suma = parseFloat(sumaPondText.split('/')[0].trim()) || 0;
-  if (suma >= 100) {
+  if (_sumaPonderacion >= 100) {
     toast("No puedes crear una nueva evaluación porque se ha alcanzado el 100% del porcentaje asignado a la materia.", false);
     return;
   }
   
   document.getElementById('modal-eval').classList.remove('hidden');
-  const disp = 100 - suma;
+  const disp = 100 - _sumaPonderacion;
   document.getElementById('ev-disponible').textContent = `Disponible: ${disp.toFixed(1)}%`;
   document.getElementById('eval-error').classList.add('hidden');
   document.getElementById('ev-nombre').value = '';
@@ -734,14 +732,15 @@ async function crearEvaluacion() {
 }
 
 function actualizarBarra(suma) {
-  const pct = Math.min(suma, 100);
+  _sumaPonderacion = parseFloat(suma) || 0;
+  const pct = Math.min(_sumaPonderacion, 100);
   document.getElementById('barra-pond').style.width = pct + '%';
   document.getElementById('barra-pond').className = `h-full transition-all rounded-full ${pct >= 100 ? 'bg-secondary' : 'bg-primary'}`;
-  document.getElementById('txt-pond').textContent = `${suma.toFixed(1)} / 100%`;
+  document.getElementById('txt-pond').textContent = `${_sumaPonderacion.toFixed(1)} / 100%`;
   
   const btn = document.getElementById('btn-nueva-eval');
   if (btn) {
-    if (suma >= 100) {
+    if (_sumaPonderacion >= 100) {
       btn.className = "flex items-center gap-2 bg-gray-500/10 text-gray-500 border border-gray-500/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-not-allowed opacity-50";
       btn.innerHTML = `<ion-icon name="ban" class="text-base"></ion-icon> Sin porcentaje disponible`;
     } else {

@@ -738,36 +738,96 @@ async function crearEvaluacion() {
   const pond   = parseFloat(document.getElementById('ev-pond').value);
   const errEl  = document.getElementById('eval-error');
 
-  if (!nombre || isNaN(pond)) { errEl.textContent = 'Completa todos los campos.'; errEl.classList.remove('hidden'); return; }
+  if (!nombre || isNaN(pond) || pond <= 0) {
+    errEl.textContent = 'Completa todos los campos con valores válidos.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  // Disable button to avoid double submit
+  const btnSubmit = document.querySelector('#form-nueva-eval button[type="submit"]');
+  if (btnSubmit) btnSubmit.disabled = true;
 
   try {
     const r = await fetch('/docente/api/evaluacion/crear/', {
       method: 'POST',
-      headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body: JSON.stringify({ asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion, nombre, tipo, ponderacion: pond })
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        asignatura_id: _asignaturaId,
+        periodo_id: _periodoId,
+        seccion: _seccion,
+        nombre, tipo,
+        ponderacion: pond
+      })
     });
+
+    // STEP 1: Check HTTP status BEFORE trying to parse JSON
+    if (!r.ok) {
+      // Try JSON first (our Flask errors), fall back to raw text (HTML error page)
+      let errorMsg;
+      const contentType = r.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const errData = await r.json().catch(() => null);
+        errorMsg = errData?.error || `Error del servidor (HTTP ${r.status})`;
+      } else {
+        const rawText = await r.text().catch(() => '');
+        // Extract just the first meaningful line from HTML error pages
+        const match = rawText.match(/\<title\>(.*?)\<\/title\>/i) ||
+                      rawText.match(/([^\n]{10,200})/m);
+        errorMsg = match ? match[1].replace(/<[^>]+>/g,'').trim() : `Error HTTP ${r.status}`;
+      }
+      console.error(`crearEvaluacion HTTP ${r.status}:`, errorMsg);
+      errEl.textContent = errorMsg;
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    // STEP 2: Parse success response
     const d = await r.json();
     if (d.ok) {
       document.getElementById('form-nueva-eval').reset();
+      errEl.classList.add('hidden');
       cerrarModalEval();
       toast(`Evaluación "${nombre}" creada.`);
       cargarTabla();
     } else {
-      errEl.textContent = d.error || 'Error al crear evaluación.';
+      const msg = d.error || 'Error al crear evaluación.';
+      console.error('crearEvaluacion error:', msg);
+      errEl.textContent = msg;
       errEl.classList.remove('hidden');
     }
-  } catch (e) {
-    errEl.textContent = 'Error de conexión con el servidor.';
+
+  } catch (err) {
+    // Network failure, CORS, timeout, or JSON parse error
+    console.error('crearEvaluacion excepción:', err);
+    errEl.textContent = `Error: ${err.message || 'Fallo de conexión. Revisa la consola para más detalles.'}`;
     errEl.classList.remove('hidden');
-    console.error(e);
+  } finally {
+    if (btnSubmit) btnSubmit.disabled = false;
   }
 }
 
 function actualizarBarra(suma) {
-  const pct = Math.min(suma, 100);
+  _sumaPonderacion = parseFloat(suma) || 0;
+  const pct = Math.min(_sumaPonderacion, 100);
   document.getElementById('barra-pond').style.width = pct + '%';
   document.getElementById('barra-pond').className = `h-full transition-all rounded-full ${pct >= 100 ? 'bg-secondary' : 'bg-primary'}`;
-  document.getElementById('txt-pond').textContent = `${suma.toFixed(1)} / 100%`;
+  document.getElementById('txt-pond').textContent = `${_sumaPonderacion.toFixed(1)} / 100%`;
+
+  // Block/unblock the Nueva Evaluacion button based on remaining %
+  const btn = document.getElementById('btn-nueva-eval');
+  if (btn) {
+    if (_sumaPonderacion >= 100) {
+      btn.setAttribute('disabled', 'disabled');
+      btn.title = 'Se ha alcanzado el 100% de ponderación';
+      btn.className = btn.className.replace(/text-secondary/g, 'text-gray-400')
+                                   .replace(/bg-secondary\/10/g, 'bg-gray-500\/10')
+                                   .replace(/border-secondary\/20/g, 'border-gray-400\/20');
+    } else {
+      btn.removeAttribute('disabled');
+      btn.title = '';
+    }
+  }
 }
 
 // Cerrar modal al hacer clic fuera

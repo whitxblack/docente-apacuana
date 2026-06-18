@@ -216,7 +216,9 @@ def crear_evaluacion():
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Error al guardar la evaluación: {str(e)}'}), 500
+        # Extract the core error message (first line = actual DB error, rest is SQLAlchemy internals)
+        error_detail = str(e).split('\n')[0].strip()
+        return jsonify({'error': f'DB Error: {error_detail}'}), 500
         
     return jsonify({'ok': True})
 

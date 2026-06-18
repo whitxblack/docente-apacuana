@@ -198,13 +198,17 @@ def crear_evaluacion():
     if cierre:
         return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
         
-    ev = models.Evaluacion(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
-        nombre=nombre, tipo=tipo, ponderacion=ponderacion, creado_por_id=docente_id
-    )
-    db.session.add(ev)
-    db.session.commit()
-    
+    try:
+        ev = models.Evaluacion(
+            asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
+            nombre=nombre, tipo=tipo, ponderacion=ponderacion, creado_por_id=docente_id
+        )
+        db.session.add(ev)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al guardar la evaluación: {str(e)}'}), 500
+        
     return jsonify({'ok': True})
 
 @api_bp.route('/notas/guardar/', methods=['POST'])
@@ -269,20 +273,20 @@ def guardar_notas():
     # Recalculate averages for all students in this course/section/period
     promedios = {}
     try:
-        evals = db.session.query(Evaluacion).filter_by(
+        evals = db.session.query(models.Evaluacion).filter_by(
             asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
         ).all()
         eval_pond = {e.id: float(e.ponderacion) for e in evals}
         evals_ids = list(eval_pond.keys())
         
         if evals_ids:
-            inscripciones = db.session.query(Inscripcion).filter_by(
+            inscripciones = db.session.query(models.Inscripcion).filter_by(
                 periodo_id=periodo_id, seccion=seccion, ano_grado=int(ano_grado)
             ).all()
             for insc in inscripciones:
-                notas_db = db.session.query(NotaEvaluacion).filter(
-                    NotaEvaluacion.inscripcion_id == insc.id,
-                    NotaEvaluacion.evaluacion_id.in_(evals_ids)
+                notas_db = db.session.query(models.NotaEvaluacion).filter(
+                    models.NotaEvaluacion.inscripcion_id == insc.id,
+                    models.NotaEvaluacion.evaluacion_id.in_(evals_ids)
                 ).all()
                 
                 suma_notas = 0.0
@@ -327,7 +331,7 @@ def cerrar_periodo():
             cierre.cerrado_por_id = docente_id
             cierre.fecha_cierre = datetime.utcnow()
         else:
-            cierre = PeriodoCierre(
+            cierre = models.PeriodoCierre(
                 asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
                 cerrado=True, cerrado_por_id=docente_id, fecha_cierre=datetime.utcnow()
             )

@@ -223,6 +223,7 @@ def crear_evaluacion():
 @api_bp.route('/notas/guardar/', methods=['POST'])
 @login_required
 def guardar_notas():
+    from datetime import datetime
     data = request.json
     notas = data.get('notas', [])
     es_borrador = data.get('es_borrador', True)
@@ -239,6 +240,8 @@ def guardar_notas():
         return jsonify({'error': 'Período cerrado. No se pueden guardar notas.'}), 403
         
     guardadas = 0
+    ahora = datetime.now()  # timestamp único para todo el batch
+    
     for item in notas:
         est_id = int(item['estudiante_id'])
         eval_id = int(item['evaluacion_id'])
@@ -250,25 +253,36 @@ def guardar_notas():
             estudiante_id=est_id, periodo_id=periodo_id
         ).first()
         if not insc:
-            insc = models.Inscripcion(estudiante_id=est_id, periodo_id=periodo_id, ano_grado=int(ano_grado), seccion=seccion)
+            insc = models.Inscripcion(
+                estudiante_id=est_id, periodo_id=periodo_id,
+                ano_grado=int(ano_grado), seccion=seccion
+            )
             db.session.add(insc)
-            db.session.commit()
+            try:
+                db.session.commit()  # flush para obtener insc.id
+            except Exception:
+                db.session.rollback()
+                continue  # skip this note if inscription fails
             
         nota_obj = db.session.query(models.NotaEvaluacion).filter_by(
             inscripcion_id=insc.id, evaluacion_id=eval_id
         ).first()
         
         if nota_obj:
+            # UPDATE: refresh all mutable fields + always update fecha_registro
             nota_obj.nota = nota
             nota_obj.asistencia = asistencia
             nota_obj.observacion = observacion
             nota_obj.es_borrador = es_borrador
             nota_obj.registrado_por_id = docente_id
+            nota_obj.fecha_registro = ahora
         else:
+            # INSERT: set fecha_registro explicitly to avoid NOT NULL violation
             nota_obj = models.NotaEvaluacion(
                 inscripcion_id=insc.id, evaluacion_id=eval_id,
                 nota=nota, asistencia=asistencia, observacion=observacion,
-                es_borrador=es_borrador, registrado_por_id=docente_id
+                es_borrador=es_borrador, registrado_por_id=docente_id,
+                fecha_registro=ahora
             )
             db.session.add(nota_obj)
         guardadas += 1

@@ -229,6 +229,18 @@
           color: var(--navbar-text, var(--color-text-main)) !important;
           background-color: var(--navbar-element-hover, rgba(0, 0, 0, 0.05)) !important;
         }
+
+        /* ── Active nav button: always readable on its white bg ── */
+        /* Override the global ion-icon rule for active pills */
+        #main-header nav a.nav-active {
+          color: #1a1a1a !important;          /* dark text on white bg */
+        }
+        #main-header nav a.nav-active span {
+          color: #1a1a1a !important;
+        }
+        #main-header nav a.nav-active ion-icon {
+          color: var(--color-accent, #10B981) !important;  /* accent icon, not muted */
+        }
       }
 
       /* Dynamic text shadow for customized navbar backgrounds */
@@ -458,19 +470,19 @@
 
         <!-- Navegación Principal (Escritorio) -->
         <nav class="hidden md:flex items-center gap-2 lg:gap-4 bg-surface-element rounded-full px-2 py-1 border border-border">
-            <a href="{{ url_for('dashboard.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'dashboard.index' %}bg-white text-primary shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
+            <a href="{{ url_for('dashboard.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'dashboard.index' %}nav-active bg-white shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
                 <ion-icon name="grid-outline" class="text-lg"></ion-icon>
                 <span>Dashboard</span>
             </a>
-            <a href="{{ url_for('calificaciones.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'calificaciones.index' %}bg-white text-primary shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
+            <a href="{{ url_for('calificaciones.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'calificaciones.index' %}nav-active bg-white shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
                 <ion-icon name="document-text-outline" class="text-lg"></ion-icon>
                 <span>Calificaciones</span>
             </a>
-            <a href="{{ url_for('planificacion.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'planificacion.index' %}bg-white text-primary shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
+            <a href="{{ url_for('planificacion.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'planificacion.index' %}nav-active bg-white shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
                 <ion-icon name="calendar-outline" class="text-lg"></ion-icon>
                 <span>Planificación</span>
             </a>
-            <a href="{{ url_for('asistencia.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'asistencia.index' %}bg-white text-primary shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
+            <a href="{{ url_for('asistencia.index') }}" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all {% if request.endpoint == 'asistencia.index' %}nav-active bg-white shadow-sm border border-border{% else %}text-text-muted hover:text-text-main hover:bg-white/50{% endif %}">
                 <ion-icon name="people-outline" class="text-lg"></ion-icon>
                 <span>Asistencia</span>
             </a>

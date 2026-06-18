@@ -70,7 +70,12 @@ def registrar():
             db.session.add(reg)
         guardados += 1
         
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al guardar asistencia: {str(e)}'}), 500
+        
     return jsonify({'ok': True, 'guardados': guardados})
 
 @asistencia_api_bp.route('/obtener/', methods=['GET'])

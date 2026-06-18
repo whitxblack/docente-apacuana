@@ -143,10 +143,10 @@
 
 <!-- ── Modal Nueva Evaluación ──────────────────────────────────────────────── -->
 <div id="modal-eval" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-  <div class="bg-surface-container border border-border rounded-2xl shadow-md w-full max-w-sm mx-4 p-6 space-y-5">
+  <form id="form-nueva-eval" onsubmit="event.preventDefault(); crearEvaluacion();" class="bg-surface-container border border-border rounded-2xl shadow-md w-full max-w-sm mx-4 p-6 space-y-5">
     <div class="flex items-center justify-between">
       <h4 class="font-headline font-bold text-base text-text-main">Nueva Evaluación</h4>
-      <button onclick="cerrarModalEval()" class="text-text-muted hover:text-text-main transition-colors">
+      <button type="button" onclick="cerrarModalEval()" class="text-text-muted hover:text-text-main transition-colors">
         <ion-icon name="close" class="text-xl"></ion-icon>
       </button>
     </div>
@@ -154,7 +154,7 @@
     <div class="space-y-3">
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Nombre</label>
-        <input id="ev-nombre" type="text" placeholder="Ej: Examen Parcial 1"
+        <input id="ev-nombre" type="text" placeholder="Ej: Examen Parcial 1" required
                class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-all placeholder:text-text-muted/50"/>
       </div>
       <div>
@@ -170,16 +170,16 @@
       </div>
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Ponderación (%)</label>
-        <input id="ev-pond" type="number" min="1" max="100" step="0.5" placeholder="Ej: 30"
+        <input id="ev-pond" type="number" min="1" max="100" step="0.5" placeholder="Ej: 30" required
                class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-all placeholder:text-text-muted/50"/>
         <p id="ev-disponible" class="text-[10px] text-text-muted mt-1"></p>
       </div>
     </div>
-    <button onclick="crearEvaluacion()"
+    <button type="submit"
             class="w-full bg-primary hover:bg-primary/80 text-text-main font-semibold py-2.5 rounded-xl text-sm transition-all">
       Crear Evaluación
     </button>
-  </div>
+  </form>
 </div>
 
 <!-- ── Modal Detalles (Asistencia/Observación) ────────────────────────────── -->
@@ -641,36 +641,48 @@ async function guardarNotas(esBorrador) {
   if (notas.length === 0) { toast('No hay notas que guardar.', false); return; }
   if (!esBorrador && !confirm('¿Confirmar notas de forma definitiva? Esta acción es permanente.')) return;
 
-  const r = await fetch('/docente/api/notas/guardar/', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
-    body: JSON.stringify({ notas, es_borrador: esBorrador, asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion, ano_grado: _anoGrado })
-  });
-  const d = await r.json();
-  if (d.ok) {
-    toast(`${d.guardadas} nota(s) ${esBorrador ? 'guardadas como borrador' : 'confirmadas definitivamente'}.`);
-    
-    // Update the averages in the DOM if returned from server
-    if (d.promedios) {
-      Object.keys(d.promedios).forEach(estId => {
-        const promVal = d.promedios[estId];
-        const cel = document.getElementById(`prom-${estId}`);
-        if (cel) {
-          if (promVal === null || promVal === undefined) {
-            cel.textContent = '–';
-            cel.className = "px-4 py-2.5 text-right font-bold text-text-muted";
-          } else {
-            const promNum = parseFloat(promVal);
-            cel.textContent = promNum.toFixed(2);
-            cel.className = `px-4 py-2.5 text-right font-bold ${promNum >= 10 ? 'text-secondary' : 'text-error'}`;
-          }
-        }
-      });
+  try {
+    const r = await fetch('/docente/api/notas/guardar/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ notas, es_borrador: esBorrador, asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion, ano_grado: _anoGrado })
+    });
+
+    if (!r.ok) {
+      const errData = await r.json().catch(() => ({ error: `Error del servidor (HTTP ${r.status})` }));
+      toast(errData.error || `Error al guardar (HTTP ${r.status}).`, false);
+      return;
     }
-    
-    if (!esBorrador) cargarTabla(); 
-  } else {
-    toast(d.error || 'Error al guardar.', false);
+
+    const d = await r.json();
+    if (d.ok) {
+      toast(`${d.guardadas} nota(s) ${esBorrador ? 'guardadas como borrador' : 'confirmadas definitivamente'}.`);
+      
+      // Update the averages in the DOM if returned from server
+      if (d.promedios) {
+        Object.keys(d.promedios).forEach(estId => {
+          const promVal = d.promedios[estId];
+          const cel = document.getElementById(`prom-${estId}`);
+          if (cel) {
+            if (promVal === null || promVal === undefined) {
+              cel.textContent = '–';
+              cel.className = "px-4 py-2.5 text-right font-bold text-text-muted";
+            } else {
+              const promNum = parseFloat(promVal);
+              cel.textContent = promNum.toFixed(2);
+              cel.className = `px-4 py-2.5 text-right font-bold ${promNum >= 10 ? 'text-secondary' : 'text-error'}`;
+            }
+          }
+        });
+      }
+      
+      if (!esBorrador) cargarTabla(); 
+    } else {
+      toast(d.error || 'Error al guardar.', false);
+    }
+  } catch (err) {
+    console.error('guardarNotas error:', err);
+    toast('Error de conexión al guardar notas. Verifica tu red e intenta nuevamente.', false);
   }
 }
 
@@ -678,14 +690,24 @@ async function guardarNotas(esBorrador) {
 // ── Cerrar Período ────────────────────────────────────────────────────────
 async function cerrarPeriodo() {
   if (!confirm('¿Cerrar definitivamente el período? Nadie podrá modificar notas sin autorización del administrador.')) return;
-  const r = await fetch('/docente/api/periodo/cerrar/', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
-    body: JSON.stringify({ asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion })
-  });
-  const d = await r.json();
-  if (d.ok) { toast('Período cerrado exitosamente.'); cargarTabla(); }
-  else toast(d.error || 'Error al cerrar.', false);
+  try {
+    const r = await fetch('/docente/api/periodo/cerrar/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion })
+    });
+    if (!r.ok) {
+      const errData = await r.json().catch(() => ({ error: `Error del servidor (HTTP ${r.status})` }));
+      toast(errData.error || `Error al cerrar (HTTP ${r.status}).`, false);
+      return;
+    }
+    const d = await r.json();
+    if (d.ok) { toast('Período cerrado exitosamente.'); cargarTabla(); }
+    else toast(d.error || 'Error al cerrar.', false);
+  } catch (err) {
+    console.error('cerrarPeriodo error:', err);
+    toast('Error de conexión al cerrar período. Intenta nuevamente.', false);
+  }
 }
 
 // ── Modal Evaluaciones ────────────────────────────────────────────────────
@@ -731,6 +753,7 @@ async function crearEvaluacion() {
     
     const d = await r.json();
     if (d.ok) {
+      document.getElementById('form-nueva-eval').reset();
       cerrarModalEval();
       toast(`Evaluación "${nombre}" creada.`);
       cargarTabla();

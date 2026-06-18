@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, session
 from app import db
 from app.models.base import AsignacionDocente, Asignatura, Estudiante, Inscripcion, Evaluacion, NotaEvaluacion, PeriodoCierre, PeriodoAcademico
 from app.services.auth_service import login_required
+# pyrefly: ignore [missing-import]
 from sqlalchemy import func
 
 api_bp = Blueprint('api', __name__, url_prefix='/docente/api')
@@ -271,43 +272,52 @@ def guardar_notas():
             db.session.add(nota_obj)
         guardadas += 1
         
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al guardar notas: {str(e)}'}), 500
     
     # Recalculate averages for all students in this course/section/period
     promedios = {}
-    evals = db.session.query(Evaluacion).filter_by(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
-    ).all()
-    eval_pond = {e.id: float(e.ponderacion) for e in evals}
-    evals_ids = list(eval_pond.keys())
-    
-    if evals_ids:
-        inscripciones = db.session.query(Inscripcion).filter_by(
-            periodo_id=periodo_id, seccion=seccion, ano_grado=int(ano_grado)
+    try:
+        evals = db.session.query(Evaluacion).filter_by(
+            asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
         ).all()
-        for insc in inscripciones:
-            notas_db = db.session.query(NotaEvaluacion).filter(
-                NotaEvaluacion.inscripcion_id == insc.id,
-                NotaEvaluacion.evaluacion_id.in_(evals_ids)
+        eval_pond = {e.id: float(e.ponderacion) for e in evals}
+        evals_ids = list(eval_pond.keys())
+        
+        if evals_ids:
+            inscripciones = db.session.query(Inscripcion).filter_by(
+                periodo_id=periodo_id, seccion=seccion, ano_grado=int(ano_grado)
             ).all()
-            
-            suma_notas = 0.0
-            suma_pond = 0.0
-            hay_notas = False
-            for n in notas_db:
-                pond = eval_pond.get(n.evaluacion_id, 0.0)
-                if n.nota is not None:
-                    suma_notas += float(n.nota) * (pond / 100.0)
-                    suma_pond += pond
-                    hay_notas = True
-            
-            if hay_notas and suma_pond > 0:
-                promedio = (suma_notas / (suma_pond / 100.0))
-                promedios[insc.estudiante_id] = round(promedio, 2)
-            else:
-                promedios[insc.estudiante_id] = None
+            for insc in inscripciones:
+                notas_db = db.session.query(NotaEvaluacion).filter(
+                    NotaEvaluacion.inscripcion_id == insc.id,
+                    NotaEvaluacion.evaluacion_id.in_(evals_ids)
+                ).all()
                 
+                suma_notas = 0.0
+                suma_pond = 0.0
+                hay_notas = False
+                for n in notas_db:
+                    pond = eval_pond.get(n.evaluacion_id, 0.0)
+                    if n.nota is not None:
+                        suma_notas += float(n.nota) * (pond / 100.0)
+                        suma_pond += pond
+                        hay_notas = True
+                
+                if hay_notas and suma_pond > 0:
+                    promedio = (suma_notas / (suma_pond / 100.0))
+                    promedios[insc.estudiante_id] = round(promedio, 2)
+                else:
+                    promedios[insc.estudiante_id] = None
+    except Exception as e_prom:
+        # Promedios failed but notes were saved — still return ok
+        pass
+            
     return jsonify({'ok': True, 'guardadas': guardadas, 'promedios': promedios})
+
 
 @api_bp.route('/periodo/cerrar/', methods=['POST'])
 @login_required
@@ -323,16 +333,21 @@ def cerrar_periodo():
     ).first()
     
     from datetime import datetime
-    if cierre:
-        cierre.cerrado = True
-        cierre.cerrado_por_id = docente_id
-        cierre.fecha_cierre = datetime.utcnow()
-    else:
-        cierre = PeriodoCierre(
-            asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
-            cerrado=True, cerrado_por_id=docente_id, fecha_cierre=datetime.utcnow()
-        )
-        db.session.add(cierre)
+    try:
+        if cierre:
+            cierre.cerrado = True
+            cierre.cerrado_por_id = docente_id
+            cierre.fecha_cierre = datetime.utcnow()
+        else:
+            cierre = PeriodoCierre(
+                asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
+                cerrado=True, cerrado_por_id=docente_id, fecha_cierre=datetime.utcnow()
+            )
+            db.session.add(cierre)
+            
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al cerrar período: {str(e)}'}), 500
         
-    db.session.commit()
     return jsonify({'ok': True})

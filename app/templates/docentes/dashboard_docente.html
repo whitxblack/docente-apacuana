@@ -1,0 +1,123 @@
+{% extends 'docentes/base_docente.html' %}
+{% block title %}Dashboard Docente{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    
+    <!-- Bienvenida -->
+    <div class="bg-surface border border-border rounded-3xl p-6 md:p-10 relative overflow-hidden shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+        <div class="relative z-10">
+            <span class="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full mb-3 uppercase tracking-wide">Portal del Docente</span>
+            <h1 class="font-headline font-extrabold text-3xl md:text-4xl text-text-main leading-tight">
+                Hola de nuevo, <span class="text-primary">{{ session.username }}</span>
+            </h1>
+            <p class="text-text-muted mt-3 text-sm md:text-base max-w-2xl font-medium leading-relaxed">
+                Este es tu panel principal. Desde aquí puedes acceder rápidamente a tus calificaciones, planificar tus clases y registrar la asistencia de las asignaturas activas en el período escolar.
+            </p>
+        </div>
+        <div class="hidden md:flex relative z-10 flex-shrink-0 bg-surface-element p-4 rounded-2xl border border-border items-center gap-4 shadow-inner">
+            <div class="text-right">
+                <p class="text-xs font-bold text-text-muted uppercase tracking-wider">Día Actual</p>
+                <p class="text-lg font-black text-text-main" id="current-date">Cargando...</p>
+            </div>
+            <div class="w-12 h-12 bg-surface rounded-xl shadow-sm border border-border flex items-center justify-center">
+                <ion-icon name="today" class="text-2xl text-primary"></ion-icon>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <a href="{{ url_for('calificaciones.index') }}" class="group block bg-surface hover:bg-surface-element border border-border hover:border-primary/40 rounded-2xl p-6 transition-all shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 rounded-xl bg-[#E8F0FE] text-[#1967D2] flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                    <ion-icon name="document-text" class="text-2xl"></ion-icon>
+                </div>
+                <ion-icon name="arrow-forward" class="text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></ion-icon>
+            </div>
+            <h3 class="font-bold text-lg text-text-main mb-1">Calificaciones</h3>
+            <p class="text-xs text-text-muted font-medium">Gestiona las notas de tus estudiantes por período y sección.</p>
+        </a>
+        <a href="{{ url_for('planificacion.index') }}" class="group block bg-surface hover:bg-surface-element border border-border hover:border-tertiary/40 rounded-2xl p-6 transition-all shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 rounded-xl bg-[#FEF7E0] text-[#B06000] flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                    <ion-icon name="calendar" class="text-2xl"></ion-icon>
+                </div>
+                <ion-icon name="arrow-forward" class="text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></ion-icon>
+            </div>
+            <h3 class="font-bold text-lg text-text-main mb-1">Planificación</h3>
+            <p class="text-xs text-text-muted font-medium">Organiza tus temas de clase, materiales de apoyo y tareas.</p>
+        </a>
+        <a href="{{ url_for('asistencia.index') }}" class="group block bg-surface hover:bg-surface-element border border-border hover:border-secondary/40 rounded-2xl p-6 transition-all shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 rounded-xl bg-[#E6F4EA] text-[#137333] flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                    <ion-icon name="people" class="text-2xl"></ion-icon>
+                </div>
+                <ion-icon name="arrow-forward" class="text-text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all"></ion-icon>
+            </div>
+            <h3 class="font-bold text-lg text-text-main mb-1">Asistencia</h3>
+            <p class="text-xs text-text-muted font-medium">Control de asistencia, historial y métricas por materia.</p>
+        </a>
+    </div>
+
+    <!-- Mis Materias Asignadas -->
+    <div class="bg-surface border border-border rounded-2xl p-6 shadow-sm">
+        <h2 class="font-headline font-bold text-xl text-text-main mb-6 flex items-center gap-2">
+            <ion-icon name="bookmarks" class="text-primary"></ion-icon> Mis Materias Asignadas
+        </h2>
+        
+        {% if asignaciones %}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {% for asig in asignaciones %}
+            <div class="bg-surface-element border border-border rounded-2xl p-5 relative overflow-hidden hover:border-primary/30 transition-colors group">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2 pointer-events-none group-hover:bg-primary/10 transition-colors"></div>
+                
+                <div class="flex items-start justify-between mb-3">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-[#137333] bg-[#E6F4EA] px-2.5 py-1 rounded-md">{{ asig.periodo_nombre }}</span>
+                    <span class="text-xs font-bold text-text-main bg-surface px-2.5 py-1 rounded-md border border-border shadow-sm">{{ asig.ano_grado }}º "{{ asig.seccion }}"</span>
+                </div>
+                
+                <h4 class="font-extrabold text-lg text-text-main mb-1 leading-tight">{{ asig.asignatura_nombre }}</h4>
+                <p class="text-xs font-mono text-text-muted mb-4">CÓDIGO: {{ asig.asignatura_codigo|default("N/A") }}</p>
+                
+                <div class="flex items-center gap-4 pt-4 border-t border-border">
+                    <span class="text-xs font-semibold text-text-muted flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-lg border border-border" title="Cantidad de Alumnos">
+                        <ion-icon name="people" class="text-primary"></ion-icon> {{ asig.cantidad_alumnos }} alumnos
+                    </span>
+                    {% if asig.aula %}
+                    <span class="text-xs font-semibold text-text-muted flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-lg border border-border" title="Aula Asignada">
+                        <ion-icon name="business" class="text-secondary"></ion-icon> {{ asig.aula }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-surface-element border border-border border-dashed rounded-3xl p-12 text-center">
+            <div class="w-16 h-16 bg-surface rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-border">
+                <ion-icon name="folder-open" class="text-3xl text-text-muted"></ion-icon>
+            </div>
+            <h3 class="text-lg font-bold text-text-main mb-1">Sin materias asignadas</h3>
+            <p class="text-text-muted text-sm font-medium">No tienes materias asignadas actualmente en este período. Si esto es un error, por favor contacta con la administración.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Mostrar la fecha actual en el dashboard
+    const dateElement = document.getElementById('current-date');
+    if (dateElement) {
+        const options = { weekday: 'long', day: 'numeric', month: 'long' };
+        let dateString = new Date().toLocaleDateString('es-VE', options);
+        // Capitalize first letter
+        dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+        dateElement.textContent = dateString;
+    }
+</script>
+{% endblock %}

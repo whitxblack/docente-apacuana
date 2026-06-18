@@ -715,18 +715,32 @@ async function crearEvaluacion() {
 
   if (!nombre || isNaN(pond)) { errEl.textContent = 'Completa todos los campos.'; errEl.classList.remove('hidden'); return; }
 
-  const r = await fetch('/docente/api/evaluacion/crear/', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
-    body: JSON.stringify({ asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion, nombre, tipo, ponderacion: pond })
-  });
-  const d = await r.json();
-  if (d.ok) {
-    cerrarModalEval();
-    toast(`Evaluación "${nombre}" creada.`);
-    cargarTabla();
-  } else {
-    errEl.textContent = d.error || 'Error al crear evaluación.';
+  try {
+    const r = await fetch('/docente/api/evaluacion/crear/', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({ asignatura_id: _asignaturaId, periodo_id: _periodoId, seccion: _seccion, nombre, tipo, ponderacion: pond })
+    });
+    
+    if (!r.ok) {
+      const errorData = await r.json().catch(() => ({ error: 'Error del servidor al procesar la solicitud.' }));
+      errEl.textContent = errorData.error || 'Error al crear evaluación.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    
+    const d = await r.json();
+    if (d.ok) {
+      cerrarModalEval();
+      toast(`Evaluación "${nombre}" creada.`);
+      cargarTabla();
+    } else {
+      errEl.textContent = d.error || 'Error al crear evaluación.';
+      errEl.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.error(err);
+    errEl.textContent = 'Error de conexión o de red. Intenta nuevamente.';
     errEl.classList.remove('hidden');
   }
 }

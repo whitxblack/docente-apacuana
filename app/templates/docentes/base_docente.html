@@ -231,6 +231,24 @@
         }
       }
 
+      /* Dynamic text outlines for customized navbar backgrounds */
+      #main-header .text-text-main, 
+      #main-header span,
+      #main-header p,
+      #main-header a,
+      #main-header ion-icon {
+        -webkit-text-stroke: 1px #fff;
+        text-stroke: 1px #fff;
+      }
+      [data-theme="dark"] #main-header .text-text-main, 
+      [data-theme="dark"] #main-header span,
+      [data-theme="dark"] #main-header p,
+      [data-theme="dark"] #main-header a,
+      [data-theme="dark"] #main-header ion-icon {
+        -webkit-text-stroke: 1px #000;
+        text-stroke: 1px #000;
+      }
+
       /* Profile Dropdown Resets (ignores parent #main-header color overrides) */
       #profile-dropdown-menu {
         background-color: var(--color-surface) !important;

@@ -184,7 +184,7 @@ def crear_evaluacion():
         return jsonify({'error': 'La ponderación debe estar entre 1 y 100'}), 400
         
     evals = db.session.query(Evaluacion).filter_by(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, activa=True
+        asignatura_id=int(asignatura_id), periodo_id=int(periodo_id), seccion=seccion, activa=True
     ).all()
     suma_actual = sum([e.ponderacion for e in evals])
     
@@ -192,14 +192,22 @@ def crear_evaluacion():
         return jsonify({'error': f'Excedería el 100%. Disponible: {100 - suma_actual:.1f}%'}), 400
         
     cierre = db.session.query(PeriodoCierre).filter_by(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion, cerrado=True
+        asignatura_id=int(asignatura_id), periodo_id=int(periodo_id), seccion=seccion, cerrado=True
     ).first()
     if cierre:
         return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
         
+    from datetime import datetime
     ev = Evaluacion(
-        asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
-        nombre=nombre, tipo=tipo, ponderacion=ponderacion, creado_por_id=docente_id
+        asignatura_id=int(asignatura_id),
+        periodo_id=int(periodo_id),
+        seccion=seccion,
+        nombre=nombre,
+        tipo=tipo,
+        ponderacion=ponderacion,
+        creado_por_id=docente_id,
+        fecha_creacion=datetime.now(),
+        activa=True
     )
     db.session.add(ev)
     db.session.commit()

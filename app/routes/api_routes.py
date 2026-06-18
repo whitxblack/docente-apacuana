@@ -4,6 +4,7 @@ import app.models.base as models
 from app.services.auth_service import login_required
 # pyrefly: ignore [missing-import]
 from sqlalchemy import func
+import traceback
 
 api_bp = Blueprint('api', __name__, url_prefix='/docente/api')
 
@@ -216,9 +217,10 @@ def crear_evaluacion():
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        # Extract the core error message (first line = actual DB error, rest is SQLAlchemy internals)
+        print("\n🚨 ERROR EN CREAR EVALUACIÓN:")
+        traceback.print_exc()
         error_detail = str(e).split('\n')[0].strip()
-        return jsonify({'error': f'DB Error: {error_detail}'}), 500
+        return jsonify({'error': f'DB Error: {error_detail}', 'traceback': traceback.format_exc()}), 500
         
     return jsonify({'ok': True})
 
@@ -293,7 +295,10 @@ def guardar_notas():
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Error al guardar notas: {str(e)}'}), 500
+        print("\n🚨 ERROR EN GUARDAR NOTAS:")
+        traceback.print_exc()
+        error_detail = str(e).split('\n')[0].strip()
+        return jsonify({'error': f'DB Error: {error_detail}', 'traceback': traceback.format_exc()}), 500
     
     # Recalculate averages for all students in this course/section/period
     promedios = {}

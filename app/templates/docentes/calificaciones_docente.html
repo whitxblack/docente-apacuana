@@ -425,6 +425,15 @@ async function cargarTabla() {
   document.getElementById('estado-inicial').classList.add('hidden');
 }
 
+// ── Helper Cálculo Puntos Equivalentes (Escala 5% = 1 pt) ──────────────────────
+function calcularPuntosEquivalentes(nota, ponderacion) {
+  const nVal = parseFloat(nota);
+  const pVal = parseFloat(ponderacion);
+  if (isNaN(nVal) || isNaN(pVal)) return '-';
+  // Fórmula: Puntos = (Nota * Ponderación) / 100
+  return ((nVal * pVal) / 100).toFixed(1);
+}
+
 // ── Render Tabla ─────────────────────────────────────────────────────────────
 function renderTabla() {
   const thead = document.getElementById('thead-notas').querySelector('tr');
@@ -484,7 +493,7 @@ function renderTabla() {
                         focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all
                         [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"/>
           <div class="w-12 text-center text-xs font-bold text-primary bg-primary/5 border border-primary/10 rounded-lg py-1.5 px-1 flex items-center justify-center h-[34px]" id="ptos-${est.estudiante_id}-${ev.id}">
-             ${val !== '' ? (parseFloat(val)*ev.ponderacion/20).toFixed(1) : '-'}
+             ${calcularPuntosEquivalentes(val, ev.ponderacion)}
           </div>
           <button onclick="abrirModalDetalles(${est.estudiante_id}, ${ev.id}, '${est.nombre.replace(/'/g, "\\'")}')" 
                   class="text-text-muted hover:text-primary transition-colors p-1 relative" ${_cerrado?'disabled':''}>
@@ -541,7 +550,7 @@ function calcularPuntos(input) {
   const val = parseFloat(input.value);
   const target = document.getElementById(`ptos-${est}-${evalId}`);
   if (!isNaN(val) && val >= 0 && val <= 20 && input.value !== '') {
-    target.textContent = (val * pond / 20).toFixed(1);
+    target.textContent = calcularPuntosEquivalentes(val, pond);
   } else {
     target.textContent = '-';
   }
@@ -563,7 +572,7 @@ function calcularFilaPorEstudiante(estId) {
   const cel = document.getElementById(`prom-${estId}`);
   if (!hayNotas) { cel.textContent = '–'; return; }
 
-  const promedio = sumaPond > 0 ? Math.round((sumaNotas / sumaPond) * 20) : 0;
+  const promedio = sumaPond > 0 ? Math.round((sumaNotas / sumaPond) * 100) : 0;
   cel.textContent = promedio.toFixed(0);
   cel.className = `px-4 py-2.5 text-right font-bold ${promedio >= 10 ? 'text-secondary' : 'text-error'}`;
 }

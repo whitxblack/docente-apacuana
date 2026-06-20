@@ -276,3 +276,49 @@ def obtener_plan_evaluacion(docente_id, asignatura_id):
         resp = current_app.make_response(jsonify({"error": "No se pudo cargar el plan de evaluación"}))
         resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp, 500
+
+@planificacion_api_bp.route('/api/plan_evaluacion/<int:docente_id>/<int:asignatura_id>', methods=['GET'])
+def api_obtener_plan_evaluacion_json(docente_id, asignatura_id):
+    """
+    API JSON local para consultar los temas de un plan de evaluación.
+    Retorna solo título, descripción y fecha programada.
+    """
+    import traceback
+    try:
+        seccion = request.args.get('seccion')
+
+        query = db.session.query(
+            models.TemaClase.titulo,
+            models.TemaClase.descripcion,
+            models.TemaClase.fecha_programada
+        ).filter(
+            models.TemaClase.creado_por_id == docente_id,
+            models.TemaClase.asignatura_id == asignatura_id,
+            models.TemaClase.activo == True
+        )
+
+        if seccion:
+            query = query.filter(models.TemaClase.seccion == seccion)
+
+        evaluaciones = query.order_by(
+            models.TemaClase.fecha_programada.asc(), 
+            models.TemaClase.fecha_creacion.asc()
+        ).all()
+
+        temas = []
+        for e in evaluaciones:
+            temas.append({
+                'titulo_tema': e.titulo,
+                'descripcion': e.descripcion or '',
+                'fecha_programada': e.fecha_programada.strftime('%Y-%m-%d') if e.fecha_programada else None
+            })
+
+        return jsonify({"temas": temas}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print("===== ERROR EN API PLAN EVALUACION (FLASK) =====")
+        traceback.print_exc()
+        print("================================================")
+        return jsonify({"error": f"Error interno en Flask: {str(e)}"}), 500
+

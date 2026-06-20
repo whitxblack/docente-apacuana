@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session, current_app
+from flask import Blueprint, request, jsonify, session, current_app, render_template
 from app import db
 import app.models.base as models
 from app.services.auth_service import login_required
@@ -230,3 +230,49 @@ def editar_tarea():
         db.session.commit()
         return jsonify({'ok': True})
     return jsonify({'error': 'No encontrado'}), 404
+
+@planificacion_api_bp.route('/perfil_docente/<int:docente_id>/plan_evaluacion/<int:asignatura_id>', methods=['GET'])
+def obtener_plan_evaluacion(docente_id, asignatura_id):
+    """
+    Obtiene el plan de evaluación de un docente para una asignatura,
+    renderizando el HTML listo para inyectarse en el Gestor de Expedientes.
+    """
+    try:
+        seccion = request.args.get('seccion')
+
+        # Consulta SQLAlchemy: filtramos y extraemos solo 3 campos (titulo, descripcion, fecha)
+        query = db.session.query(
+            models.TemaClase.titulo,
+            models.TemaClase.descripcion,
+            models.TemaClase.fecha_programada
+        ).filter(
+            models.TemaClase.creado_por_id == docente_id,
+            models.TemaClase.asignatura_id == asignatura_id,
+            models.TemaClase.activo == True
+        )
+
+        if seccion:
+            query = query.filter(models.TemaClase.seccion == seccion)
+
+        evaluaciones = query.order_by(models.TemaClase.fecha_programada.asc(), models.TemaClase.fecha_creacion.asc()).all()
+
+        plan_datos = [
+            {
+                'titulo_tema': eval.titulo,
+                'descripcion': eval.descripcion,
+                'fecha_programada': eval.fecha_programada
+            } for eval in evaluaciones
+        ]
+
+        response = render_template('docentes/fragmentos/_plan_evaluacion.html', plan_evaluacion=plan_datos)
+        
+        # Permitimos CORS para que el panel administrativo (Django) lo pueda cargar via AJAX
+        resp = current_app.make_response(response)
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+
+    except Exception as e:
+        print(f"Error al obtener el plan de evaluación: {e}")
+        resp = current_app.make_response(jsonify({"error": "No se pudo cargar el plan de evaluación"}))
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 500

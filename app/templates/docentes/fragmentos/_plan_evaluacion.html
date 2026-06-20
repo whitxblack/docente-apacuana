@@ -1,0 +1,58 @@
+<div class="plan-evaluacion-container mt-4 p-4 bg-white rounded shadow-sm border border-gray-200">
+    <h4 class="text-xl font-bold mb-4 text-gray-800">
+        <ion-icon name="calendar-outline" class="text-blue-600 mr-2 align-middle"></ion-icon> Plan de Evaluación
+    </h4>
+    
+    {% if plan_evaluacion and plan_evaluacion|length > 0 %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border-collapse">
+                <thead class="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Título del Tema</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Descripción</th>
+                        <th class="py-3 px-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">Fecha Programada</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for evaluacion in plan_evaluacion %}
+                    <tr class="hover:bg-gray-50 transition duration-150">
+                        <td class="py-3 px-4 text-sm text-gray-900 font-medium align-top">
+                            {{ evaluacion.titulo_tema }}
+                        </td>
+                        <td class="py-3 px-4 text-sm text-gray-600 align-top">
+                            {{ evaluacion.descripcion }}
+                        </td>
+                        <td class="py-3 px-4 text-sm text-center align-top">
+                            
+                            <!-- LÓGICA DE VALIDACIÓN CRÍTICA PARA LA FECHA -->
+                            {% if evaluacion.fecha_programada is none or evaluacion.fecha_programada == '' or evaluacion.fecha_programada|string|trim == 'None' %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 border border-red-200">
+                                    <ion-icon name="alert-circle-outline" class="mr-1 align-middle"></ion-icon> Fecha no definida
+                                </span>
+                            {% else %}
+                                <!-- Renderizado formateado normal si existe -->
+                                <span class="px-3 py-1 inline-flex text-sm font-medium rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                                    <ion-icon name="calendar-check-outline" class="mr-2 align-middle"></ion-icon>
+                                    {% if evaluacion.fecha_programada is string %}
+                                        {{ evaluacion.fecha_programada }}
+                                    {% else %}
+                                        {{ evaluacion.fecha_programada.strftime('%d/%m/%Y') }}
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                            <!-- FIN LÓGICA DE VALIDACIÓN -->
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <!-- Estado vacío: Cuando el docente no ha cargado nada -->
+        <div class="p-6 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            <ion-icon name="folder-open-outline" class="text-gray-400 text-4xl mb-3 block"></ion-icon>
+            <p class="text-gray-600 font-medium">Este docente aún no ha cargado un plan de evaluación para esta materia.</p>
+        </div>
+    {% endif %}
+</div>

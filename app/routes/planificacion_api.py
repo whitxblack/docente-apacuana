@@ -293,8 +293,7 @@ def api_obtener_plan_evaluacion_json(docente_id, asignatura_id):
             models.TemaClase.fecha_programada
         ).filter(
             models.TemaClase.creado_por_id == docente_id,
-            models.TemaClase.asignatura_id == asignatura_id,
-            models.TemaClase.activo == True
+            models.TemaClase.asignatura_id == asignatura_id
         )
 
         if seccion:

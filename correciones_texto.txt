@@ -1,0 +1,16 @@
+La pagina tiene error al poner las siguiente combinación 
+Como es visible en la siguiente imagen las letras del sistema no se ven por que estas ya son blancas o de un tono claro al ponerlo en un tono oscuro y al seleccionar el blanco desaparecen, se puede quitar el blanco como opción y que a la hora de personalizarlo si quieren poner blanco que ellos noten el problema o hacer algún ajuste para que el color blanco haga aparecer letras negras esto debería suceder con cualquier color claro 
+Al crear una evaluación el botón no esta funcionando para crearla
+Toda la planificación no esta funcionando correctamente no hace absolutamente nada
+En ninguna parte debajo de la lista como se puede ver aparece el am o pm solo aparecen los números debería de aparecer alado del numero como se muestra en la lista para ser mas claro y se pueda entender mejor en el sistema
+En el apartado de asistencia la barra esta asi se duplican las flechas de despliegue 
+Como se puede ver en la siguiente imagen da error de conexión al intentar cargar un registro 
+Las notas finales o definitivas se tienen que redondear en el sistema ya que no se pueden registrar en decimales en Python se puede usar la instrucción round en el resultado por ejemplo:
+nota1 = 1.20 
+nota2 = 2.20
+resultado_suma = nota1 + nota2 
+resultado_redondeado = round(resultado_suma)
+el resultado normal seria 3.40 pero se redondea a 3 
+Error visual al mover la barra de estudiantes se sobrepone encima de todas mi recomendación si no quiere que se pierda el estudiante y se mueva con la barra es ponerle un fondo negro que se mueva con toda la tabla de calificaciones como esta pero con un fondo negro para que no se vea el fondo y choque visualmente con el espectador 
+No estoy seguro de esto pero si estoy guardando dos notas la de hernandez y Vargas por que me muestra 12 al guardar en borradores?
+Me gusta la parte de añadir notas pero si se marcan como ausentes podríamos mostrar un icono como de alerta en lugar de un cosito azul para los presentes que quieran ponerle nota me parece perfecto dejarlo con el circulo azul 

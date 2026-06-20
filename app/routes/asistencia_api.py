@@ -11,72 +11,107 @@ asistencia_api_bp = Blueprint('asistencia_api', __name__, url_prefix='/docente/a
 @login_required
 def registrar():
     """Guarda la asistencia masiva de una lista de estudiantes para una fecha."""
-    data = request.json
-    asignatura_id = data.get('asignatura_id')
-    periodo_id = data.get('periodo_id')
-    seccion = data.get('seccion')
-    fecha_str = data.get('fecha')
-    registros = data.get('registros', [])
-    docente_id = session.get('usuario_id')
-    
-    if not all([asignatura_id, periodo_id, seccion, fecha_str]):
-        return jsonify({'error': 'Parámetros incompletos'}), 400
+    try:
+        data = request.json
+        asignatura_id = data.get('asignatura_id')
+        periodo_id = data.get('periodo_id')
+        seccion = data.get('seccion')
+        fecha_str = data.get('fecha')
+        registros = data.get('registros', [])
+        docente_id = session.get('usuario_id')
         
-    fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    guardados = 0
-    
-    for item in registros:
-        est_id = int(item['estudiante_id'])
-        estado = item.get('estado', 'PRESENTE')
-        observacion = item.get('observacion', '')
-        hora_llegada_str = item.get('hora_llegada')
+        if not all([asignatura_id, periodo_id, seccion, fecha_str]):
+            return jsonify({'error': 'Parámetros incompletos'}), 400
+            
+        fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+        guardados = 0
         
-        hora_llegada = None
-        if hora_llegada_str:
-            try:
-                hora_llegada = datetime.strptime(hora_llegada_str, '%H:%M').time()
-            except ValueError:
-                pass
-        
-        # Buscar registro existente (upsert)
-        existente = db.session.query(models.RegistroAsistencia).filter_by(
-            estudiante_id=est_id,
-            asignatura_id=asignatura_id,
-            periodo_id=periodo_id,
-            seccion=seccion,
-            fecha=fecha
-        ).first()
-        
-        if existente:
-            existente.estado = estado
-            existente.observacion = observacion
-            existente.hora_llegada = hora_llegada
-            existente.registrado_por_id = docente_id
-            existente.hora_registro = datetime.now()
-        else:
-            reg = models.RegistroAsistencia(
+        for item in registros:
+            est_id = int(item['estudiante_id'])
+            estado = item.get('estado', 'PRESENTE')
+            observacion = item.get('observacion', '')
+            hora_llegada_str = item.get('hora_llegada')
+            
+            hora_llegada = None
+            if hora_llegada_str:
+                try:
+                    hora_llegada = datetime.strptime(hora_llegada_str, '%H:%M').time()
+                except ValueError:
+                    pass
+            
+            # Buscar registro existente (upsert)
+            existente = db.session.query(models.RegistroAsistencia).filter_by(
                 estudiante_id=est_id,
                 asignatura_id=asignatura_id,
                 periodo_id=periodo_id,
                 seccion=seccion,
-                fecha=fecha,
-                estado=estado,
-                observacion=observacion,
-                hora_llegada=hora_llegada,
-                metodo='MANUAL',
-                registrado_por_id=docente_id,
-                hora_registro=datetime.now()
-            )
-            db.session.add(reg)
-        guardados += 1
-        
-    try:
+                fecha=fecha
+            ).first()
+            
+            if existente:
+                existente.estado = estado
+                existente.observacion = observacion
+                existente.hora_llegada = hora_llegada
+                existente.registrado_por_id = docente_id
+                existente.hora_registro = datetime.now()
+            else:
+                reg = models.RegistroAsistencia(
+                    estudiante_id=est_id,
+                    asignatura_id=asignatura_id,
+                    periodo_id=periodo_id,
+                    seccion=seccion,
+                    fecha=fecha,
+                    estado=estado,
+                    observacion=observacion,
+                    hora_llegada=hora_llegada,
+                    metodo='MANUAL',
+                    registrado_por_id=docente_id,
+                    hora_registro=datetime.now()
+                )
+                db.session.add(reg)
+            
+            # ======== INTERCONEXION CON GESTOR-APACUANA ========
+            # Actualizar asistencias_registroasistencia
+            if getattr(models, 'AsistenciaGeneral', None) is not None:
+                estudiante = db.session.query(models.Estudiante).get(est_id)
+                if estudiante:
+                    asistio = (estado in ['PRESENTE', 'RETARDO', 'JUSTIFICADO'])
+                    # La logica original de gestor puede variar, asumamos que JUSTIFICADO es no asiste o si asiste?
+                    # En modelos de asistencia general de gestor, asistio es bool
+                    # Si no esta PRESENTE/RETARDO, no asiste.
+                    asistio_bool = (estado in ['PRESENTE', 'RETARDO'])
+                    
+                    existente_general = db.session.query(models.AsistenciaGeneral).filter_by(
+                        tipo='ESTUDIANTE',
+                        estudiante_cedula=estudiante.cedula_identidad,
+                        fecha=fecha
+                    ).first()
+                    
+                    if existente_general:
+                        existente_general.asistio = asistio_bool
+                        existente_general.registrado_por_id = docente_id
+                    else:
+                        nombre_completo = f"{estudiante.nombres} {estudiante.apellidos}"
+                        reg_general = models.AsistenciaGeneral(
+                            tipo='ESTUDIANTE',
+                            fecha=fecha,
+                            estudiante_cedula=estudiante.cedula_identidad,
+                            estudiante_nombre=nombre_completo[:200],
+                            asistio=asistio_bool,
+                            registrado_por_id=docente_id,
+                            fecha_registro=datetime.now()
+                        )
+                        db.session.add(reg_general)
+
+            guardados += 1
+            
         db.session.commit()
+        return jsonify({'ok': True, 'guardados': guardados})
     except Exception as e:
         db.session.rollback()
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Error al guardar asistencia: {str(e)}'}), 500
-        
-    return jsonify({'ok': True, 'guardados': guardados})
 
 @asistencia_api_bp.route('/obtener/', methods=['GET'])
 @login_required

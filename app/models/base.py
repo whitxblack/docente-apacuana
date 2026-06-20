@@ -24,12 +24,13 @@ MaterialApoyo = None
 TareaDocente = None
 PeriodoCierre = None
 RegistroAsistencia = None
+AsistenciaGeneral = None
 
 def init_models():
     global Usuario, Asignatura, PeriodoAcademico, AsignacionDocente
     global Evaluacion, NotaEvaluacion, Inscripcion, Estudiante
     global PerfilDocente, TemaClase, MaterialApoyo, TareaDocente, PeriodoCierre
-    global RegistroAsistencia
+    global RegistroAsistencia, AsistenciaGeneral
     
     reflect_database()
     
@@ -48,3 +49,4 @@ def init_models():
     TareaDocente = Base.classes.get('docentes_tareadocente')
     PeriodoCierre = Base.classes.get('docentes_periodocierre')
     RegistroAsistencia = Base.classes.get('docentes_registroasistencia')
+    AsistenciaGeneral = Base.classes.get('asistencias_registroasistencia')

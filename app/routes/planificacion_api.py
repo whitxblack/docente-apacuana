@@ -237,7 +237,122 @@ def editar_tarea():
         tarea.fecha_entrega = datetime.strptime(fecha_entrega, '%Y-%m-%dT%H:%M') if fecha_entrega else None
         db.session.commit()
         return jsonify({'ok': True})
+        return jsonify({'ok': True})
     return jsonify({'error': 'No encontrado'}), 404
+
+@planificacion_api_bp.route('/clonar/', methods=['POST'])
+@login_required
+def clonar_planificacion():
+    data = request.json
+    asignatura_id = data.get('asignatura_id')
+    periodo_id = data.get('periodo_id')
+    seccion_origen = data.get('seccion')
+    confirmacion = data.get('confirmacion')
+    docente_id = session.get('usuario_id')
+    
+    if not all([asignatura_id, periodo_id, seccion_origen]):
+        return jsonify({'error': 'Parámetros incompletos'}), 400
+        
+    try:
+        # Obtener secciones destino (misma asignatura y periodo, distinta seccion)
+        asignaciones = db.session.query(models.AsignacionDocente).filter_by(
+            docente_id=docente_id,
+            asignatura_id=asignatura_id,
+            periodo_id=periodo_id,
+            activa=True
+        ).filter(models.AsignacionDocente.seccion != seccion_origen).all()
+        
+        target_sections = list(set([a.seccion for a in asignaciones]))
+        
+        if not target_sections:
+            return jsonify({'error': 'No tienes otras secciones asignadas para esta materia en este período.'}), 404
+            
+        # Verificar conflictos
+        conflict_sections = []
+        clean_sections = []
+        
+        for sec in target_sections:
+            count = db.session.query(models.TemaClase).filter_by(
+                asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=sec
+            ).count()
+            if count > 0:
+                conflict_sections.append(sec)
+            else:
+                clean_sections.append(sec)
+                
+        # Si hay conflictos y no hay confirmacion previa, devolver estado conflict
+        if conflict_sections and not confirmacion:
+            return jsonify({
+                'status': 'conflict',
+                'conflictos': conflict_sections
+            })
+            
+        sections_to_clone = clean_sections
+        
+        # Procesar según la confirmación
+        if confirmacion == 'overwrite':
+            # Borrar las existentes de las secciones con conflicto
+            for sec in conflict_sections:
+                temas_viejos = db.session.query(models.TemaClase).filter_by(
+                    asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=sec
+                ).all()
+                for tv in temas_viejos:
+                    # Borrar evaluaciones asociadas
+                    db.session.query(models.Evaluacion).filter_by(tema_id=tv.id).delete()
+                    # (Opcional) Borrar MaterialApoyo y TareaDocente si existen
+                    db.session.query(models.MaterialApoyo).filter_by(tema_id=tv.id).delete()
+                    db.session.query(models.TareaDocente).filter_by(tema_id=tv.id).delete()
+                    db.session.delete(tv)
+            sections_to_clone.extend(conflict_sections)
+            
+        # Obtener la planificación origen
+        temas_origen = db.session.query(models.TemaClase).filter_by(
+            asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion_origen
+        ).all()
+        
+        if not temas_origen:
+            return jsonify({'error': 'La sección de origen no tiene planificación cargada.'}), 404
+            
+        # Inserción (Duplicación)
+        for sec_dest in sections_to_clone:
+            for tema in temas_origen:
+                # Clonar Tema
+                nuevo_tema = models.TemaClase(
+                    asignatura_id=asignatura_id,
+                    periodo_id=periodo_id,
+                    seccion=sec_dest,
+                    titulo=tema.titulo,
+                    descripcion=tema.descripcion,
+                    fecha_programada=tema.fecha_programada,
+                    creado_por_id=docente_id,
+                    fecha_creacion=datetime.now()
+                )
+                db.session.add(nuevo_tema)
+                db.session.flush() # Para obtener nuevo_tema.id
+                
+                # Clonar Evaluaciones de este tema
+                evaluaciones = db.session.query(models.Evaluacion).filter_by(tema_id=tema.id).all()
+                for ev in evaluaciones:
+                    nueva_ev = models.Evaluacion(
+                        tema_id=nuevo_tema.id,
+                        asignatura_id=asignatura_id,
+                        periodo_id=periodo_id,
+                        seccion=sec_dest,
+                        nombre=ev.nombre,
+                        tipo=ev.tipo if hasattr(ev, 'tipo') else None,
+                        ponderacion=ev.ponderacion,
+                        creado_por_id=docente_id,
+                        activa=True,
+                        fecha_creacion=datetime.now()
+                    )
+                    db.session.add(nueva_ev)
+                    
+        db.session.commit()
+        return jsonify({'status': 'success', 'cloned_to': sections_to_clone})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al clonar planificación: {str(e)}'}), 500
 
 @planificacion_api_bp.route('/perfil_docente/<int:docente_id>/plan_evaluacion/<int:asignatura_id>', methods=['GET'])
 def obtener_plan_evaluacion(docente_id, asignatura_id):

@@ -53,10 +53,16 @@
         <p id="sub-materia" class="text-xs text-text-muted mt-0.5"></p>
         <div id="indicador-ponderacion" class="mt-2 hidden"></div>
       </div>
-      <button onclick="abrirModalTema()"
-              class="flex items-center gap-2 bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
-        <ion-icon name="add-outline" class="text-base"></ion-icon> Nuevo Tema / Semana
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="clonarPlanificacion()"
+                class="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all" title="Subir a las otras secciones">
+          <ion-icon name="copy-outline" class="text-base"></ion-icon> Clonar a otras secciones
+        </button>
+        <button onclick="abrirModalTema()"
+                class="flex items-center gap-2 bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
+          <ion-icon name="add-outline" class="text-base"></ion-icon> Nuevo Tema / Semana
+        </button>
+      </div>
     </div>
 
     <!-- Contenedor de Temas -->
@@ -819,5 +825,55 @@ async function eliminarEvaluacion(id) {
 document.getElementById('modal-eval').addEventListener('click', function(e) {
   if (e.target === this) cerrarModalEval();
 });
+
+// ── Clonación Masiva ──────────────────────────────────────────────────────
+async function clonarPlanificacion(confirmacion = null) {
+  if (!_asignaturaId || !_periodoId || !_seccion) {
+    toast('No hay una sección válida seleccionada para clonar.', false);
+    return;
+  }
+  
+  if (!confirmacion) {
+    if (!confirm('¿Deseas clonar toda esta planificación (temas y evaluaciones) hacia las demás secciones homólogas?')) return;
+  }
+  
+  try {
+    const payload = {
+      asignatura_id: _asignaturaId,
+      periodo_id: _periodoId,
+      seccion: _seccion,
+      confirmacion: confirmacion
+    };
+    
+    const r = await fetch('/docente/api/planificacion/clonar/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await r.json();
+    
+    if (data.status === 'conflict') {
+      const msg = `Las secciones: ${data.conflictos.join(', ')} ya tienen una planificación cargada.\n\n¿Deseas ELIMINAR la planificación actual de esas secciones para sobreescribirla con esta nueva?\n\n- Dale a Aceptar para Sobreescribir\n- Dale a Cancelar para Omitir esas secciones`;
+      if (confirm(msg)) {
+        clonarPlanificacion('overwrite');
+      } else {
+        clonarPlanificacion('skip');
+      }
+      return;
+    }
+    
+    if (data.status === 'success') {
+      const msjExtra = data.cloned_to.length > 0 
+        ? `Clonado en secciones: ${data.cloned_to.join(', ')}` 
+        : `No se clonó en ninguna sección (todas omitidas o no existen).`;
+      toast(msjExtra, data.cloned_to.length > 0);
+    } else {
+      toast(data.error || 'Error al clonar planificación.', false);
+    }
+  } catch (err) {
+    toast('Error de red al clonar planificación.', false);
+  }
+}
 </script>
 {% endblock %}

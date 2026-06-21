@@ -31,7 +31,7 @@ def get_temas():
             'id': m.id,
             'titulo': m.titulo,
             'enlace': m.enlace,
-            'archivo': f"/media/{m.archivo}" if m.archivo else None
+            'archivo': m.archivo if (m.archivo and m.archivo.startswith('http')) else (f"/media/{m.archivo}" if m.archivo else None)
         } for m in materiales]
         
         t_data = [{
@@ -172,10 +172,28 @@ def subir_material():
     if archivo and archivo.filename != '':
         try:
             filename = secure_filename(archivo.filename)
-            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'materiales')
-            os.makedirs(upload_folder, exist_ok=True)
-            file_path = f"materiales/{filename}"
-            archivo.save(os.path.join(upload_folder, filename))
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            safe_name = f"{timestamp}_{filename}"
+
+            if os.environ.get('VERCEL'):
+                # Modo Cloud (Vercel): Guardar en Supabase Storage
+                try:
+                    from db import supabase_admin
+                    file_bytes = archivo.read()
+                    res = supabase_admin.storage.from_("materiales").upload(
+                        path=safe_name,
+                        file=file_bytes,
+                        file_options={"content-type": archivo.content_type}
+                    )
+                    file_path = supabase_admin.storage.from_("materiales").get_public_url(safe_name)
+                except Exception as ex_supa:
+                    return jsonify({'success': False, 'message': f'Fallo al subir a Supabase Storage: {str(ex_supa)}. Asegúrate de crear el bucket "materiales" público.'}), 500
+            else:
+                # Modo Local: Guardar en el disco
+                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'materiales')
+                os.makedirs(upload_folder, exist_ok=True)
+                file_path = f"materiales/{safe_name}"
+                archivo.save(os.path.join(upload_folder, safe_name))
         except Exception as e:
             return jsonify({'success': False, 'message': f'Fallo al guardar archivo: {str(e)}'}), 500
             

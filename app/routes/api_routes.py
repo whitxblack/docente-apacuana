@@ -131,12 +131,15 @@ def evaluaciones():
     if not all([asignatura_id, periodo_id, seccion]):
         return jsonify({'error': 'Parámetros incompletos'}), 400
         
-    evaluaciones_db = db.session.query(models.Evaluacion).filter(
+    evaluaciones_db = db.session.query(models.Evaluacion).join(
+        models.TemaClase, models.Evaluacion.tema_id == models.TemaClase.id
+    ).filter(
         models.Evaluacion.asignatura_id == asignatura_id,
         models.Evaluacion.periodo_id == periodo_id,
         models.Evaluacion.seccion == seccion,
-        models.Evaluacion.activa == True
-    ).order_by(models.Evaluacion.fecha_creacion).all()
+        models.Evaluacion.activa == True,
+        models.TemaClase.activo == True
+    ).order_by(models.TemaClase.fecha_programada, models.Evaluacion.fecha_creacion).all()
     
     notas_qs = db.session.query(models.NotaEvaluacion, models.Inscripcion).join(
         models.Inscripcion, models.NotaEvaluacion.inscripcion_id == models.Inscripcion.id

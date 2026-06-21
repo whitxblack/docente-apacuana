@@ -240,30 +240,28 @@ def obtener_plan_evaluacion(docente_id, asignatura_id):
     try:
         seccion = request.args.get('seccion')
 
-        # Consulta SQLAlchemy: filtramos desde Evaluacion y hacemos join con TemaClase
+        # Consulta SQLAlchemy: filtramos y extraemos solo 3 campos (titulo, descripcion, fecha)
         query = db.session.query(
-            models.Evaluacion.titulo_tema,
-            models.Evaluacion.descripcion,
+            models.TemaClase.titulo,
+            models.TemaClase.descripcion,
             models.TemaClase.fecha_programada
-        ).outerjoin(
-            models.TemaClase, models.Evaluacion.tema_id == models.TemaClase.id
         ).filter(
-            models.Evaluacion.creado_por_id == docente_id,
-            models.Evaluacion.asignatura_id == asignatura_id,
-            models.Evaluacion.activa == True
+            models.TemaClase.creado_por_id == docente_id,
+            models.TemaClase.asignatura_id == asignatura_id,
+            models.TemaClase.activo == True
         )
 
         if seccion:
-            query = query.filter(models.Evaluacion.seccion == seccion)
+            query = query.filter(models.TemaClase.seccion == seccion)
 
-        evaluaciones = query.order_by(models.TemaClase.fecha_programada.asc()).all()
+        evaluaciones = query.order_by(models.TemaClase.fecha_programada.asc(), models.TemaClase.fecha_creacion.asc()).all()
 
         plan_datos = [
             {
-                'titulo_tema': ev.titulo_tema,
-                'descripcion': ev.descripcion,
-                'fecha_programada': ev.fecha_programada
-            } for ev in evaluaciones
+                'titulo_tema': eval.titulo,
+                'descripcion': eval.descripcion,
+                'fecha_programada': eval.fecha_programada
+            } for eval in evaluaciones
         ]
 
         response = render_template('docentes/fragmentos/_plan_evaluacion.html', plan_evaluacion=plan_datos)
@@ -290,30 +288,28 @@ def api_obtener_plan_evaluacion_json(docente_id, asignatura_id):
         seccion = request.args.get('seccion')
 
         query = db.session.query(
-            models.Evaluacion.titulo_tema,
-            models.Evaluacion.descripcion,
+            models.TemaClase.titulo,
+            models.TemaClase.descripcion,
             models.TemaClase.fecha_programada
-        ).outerjoin(
-            models.TemaClase, models.Evaluacion.tema_id == models.TemaClase.id
         ).filter(
-            models.Evaluacion.creado_por_id == docente_id,
-            models.Evaluacion.asignatura_id == asignatura_id,
-            models.Evaluacion.activa == True
+            models.TemaClase.creado_por_id == docente_id,
+            models.TemaClase.asignatura_id == asignatura_id
         )
 
         if seccion:
-            query = query.filter(models.Evaluacion.seccion == seccion)
+            query = query.filter(models.TemaClase.seccion == seccion)
 
         evaluaciones = query.order_by(
-            models.TemaClase.fecha_programada.asc()
+            models.TemaClase.fecha_programada.asc(), 
+            models.TemaClase.fecha_creacion.asc()
         ).all()
 
         temas = []
         for e in evaluaciones:
             temas.append({
-                'titulo_tema': e.titulo_tema,
+                'titulo_tema': e.titulo,
                 'descripcion': e.descripcion or '',
-                'fecha_programada': e.fecha_programada.strftime('%Y-%m-%d') if e.fecha_programada else "Fecha no definida"
+                'fecha_programada': e.fecha_programada.strftime('%Y-%m-%d') if e.fecha_programada else None
             })
 
         return jsonify({"temas": temas}), 200

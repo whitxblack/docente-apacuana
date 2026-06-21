@@ -217,15 +217,11 @@ def crear_evaluacion():
             asignatura_id=asignatura_id, 
             periodo_id=periodo_id, 
             seccion=seccion,
-            tema_id=tema.id,
-            titulo_tema=tema.titulo,
-            descripcion=tema.descripcion or '',
             nombre=nombre, 
             tipo=tipo, 
             ponderacion=ponderacion,
             creado_por_id=docente_id,
             fecha_creacion=datetime.now(),
-            fecha_registro=datetime.now(),
             activa=True
         )
         db.session.add(ev)
@@ -235,6 +231,7 @@ def crear_evaluacion():
     except Exception as e:
         db.session.rollback()
         print("\n🚨 ERROR EN CREAR EVALUACIÓN:")
+        import traceback
         traceback.print_exc()
         error_detail = str(e).split('\n')[0].strip()
         return jsonify({'error': f'DB Error: {error_detail}', 'traceback': traceback.format_exc()}), 500

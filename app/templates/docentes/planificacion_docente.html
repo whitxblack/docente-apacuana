@@ -434,7 +434,7 @@ async function recargarTemas() {
       `).join('');
 
       let evalHtml = (tema.evaluaciones || []).map(e => `
-        <div class="flex items-start justify-between py-2 border-b border-border/50 last:border-0 group">
+        <div id="evaluacion-${e.id}" class="flex items-start justify-between py-2 border-b border-border/50 last:border-0 group">
           <div class="flex items-start gap-2">
             <div class="w-6 h-6 mt-0.5 rounded-md bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
               <ion-icon name="document-text-outline"></ion-icon>
@@ -774,14 +774,11 @@ async function eliminarEvaluacion(id) {
     
     if (r.ok && d.ok) {
       toast('Evaluación eliminada correctamente.');
-      const row = document.getElementById(`evaluacion-row-${id}`);
-      if (row) {
-        const ul = row.parentElement;
-        row.remove();
-        if (ul.children.length === 0) {
-          ul.parentElement.innerHTML = '<span class="text-gray-400 italic block text-center">Sin evaluaciones</span>';
-        }
+      const evCont = document.getElementById(`evaluacion-${id}`);
+      if (evCont) {
+        evCont.remove();
       }
+      recargarTemas(); // También recargamos para asegurar el estado vacío si corresponde
     } else {
       alert(d.error || 'Error al eliminar la evaluación.');
     }

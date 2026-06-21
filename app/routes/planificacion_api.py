@@ -41,13 +41,21 @@ def get_temas():
             'fecha_entrega': t.fecha_entrega.isoformat() if t.fecha_entrega else None
         } for t in tareas]
         
+        evaluaciones = db.session.query(models.Evaluacion).filter_by(tema_id=tema.id).all()
+        e_data = [{
+            'id': e.id,
+            'nombre': e.nombre,
+            'ponderacion': float(e.ponderacion) if e.ponderacion else 0
+        } for e in evaluaciones]
+        
         temas_data.append({
             'id': tema.id,
             'titulo': tema.titulo,
             'descripcion': tema.descripcion,
             'fecha_programada': tema.fecha_programada.strftime('%Y-%m-%d') if tema.fecha_programada else None,
             'materiales': m_data,
-            'tareas': t_data
+            'tareas': t_data,
+            'evaluaciones': e_data
         })
         
     return jsonify({'temas': temas_data})

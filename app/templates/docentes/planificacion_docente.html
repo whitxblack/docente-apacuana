@@ -433,6 +433,27 @@ async function recargarTemas() {
         </div>
       `).join('');
 
+      let evalHtml = (tema.evaluaciones || []).map(e => `
+        <div class="flex items-start justify-between py-2 border-b border-border/50 last:border-0 group">
+          <div class="flex items-start gap-2">
+            <div class="w-6 h-6 mt-0.5 rounded-md bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+              <ion-icon name="document-text-outline"></ion-icon>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-text-main">${e.nombre}</p>
+              <p class="text-[11px] text-primary mt-0.5 font-bold">Ponderación: ${e.ponderacion}%</p>
+            </div>
+          </div>
+          <div class="flex items-center opacity-0 group-hover:opacity-100 transition-all gap-1">
+            <button onclick="eliminarEvaluacion(${e.id})" class="text-text-muted hover:text-error p-1 transition-all">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      
+      let tarEvalHtml = tarHtml + evalHtml;
+
       cont.innerHTML += `
         <div class="bg-surface-element border border-border rounded-xl overflow-hidden shadow-sm">
           <!-- Cabecera del Tema -->
@@ -462,14 +483,14 @@ async function recargarTemas() {
             <!-- Tareas y Evaluaciones -->
             <div class="p-4">
               <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-bold uppercase tracking-widest text-text-muted flex items-center gap-1"><ion-icon name="clipboard-outline" class="text-tertiary"></ion-icon> Tareas</span>
+                <span class="text-xs font-bold uppercase tracking-widest text-text-muted flex items-center gap-1"><ion-icon name="clipboard-outline" class="text-tertiary"></ion-icon> Tareas / Evaluaciones</span>
                 <div class="flex gap-1">
                   <button onclick="abrirModalTarea(${tema.id})" class="text-[10px] bg-tertiary/10 text-tertiary px-2 py-1 rounded font-bold hover:bg-tertiary hover:text-background transition-colors">ASIGNAR</button>
                   <button onclick="abrirModalEval(${tema.id})" class="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded font-bold hover:bg-primary hover:text-text-main transition-colors">EVALUAR</button>
                 </div>
               </div>
               <div class="space-y-1">
-                ${tarHtml || '<p class="text-xs text-text-muted/50 italic">Sin tareas asignadas.</p>'}
+                ${tarEvalHtml || '<p class="text-xs text-text-muted/50 italic">Sin tareas o evaluaciones asignadas.</p>'}
               </div>
             </div>
           </div>

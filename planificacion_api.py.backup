@@ -240,16 +240,11 @@ def obtener_plan_evaluacion(docente_id, asignatura_id):
     try:
         seccion = request.args.get('seccion')
 
-        # Consulta SQLAlchemy: filtramos y extraemos TemaClase y Evaluacion
+        # Consulta SQLAlchemy: filtramos y extraemos solo 3 campos (titulo, descripcion, fecha)
         query = db.session.query(
-            models.TemaClase.id.label('tema_id'),
             models.TemaClase.titulo,
             models.TemaClase.descripcion,
-            models.TemaClase.fecha_programada,
-            models.Evaluacion.id.label('evaluacion_id'),
-            models.Evaluacion.nombre.label('evaluacion_nombre')
-        ).outerjoin(
-            models.Evaluacion, models.TemaClase.id == models.Evaluacion.tema_id
+            models.TemaClase.fecha_programada
         ).filter(
             models.TemaClase.creado_por_id == docente_id,
             models.TemaClase.asignatura_id == asignatura_id,
@@ -259,25 +254,15 @@ def obtener_plan_evaluacion(docente_id, asignatura_id):
         if seccion:
             query = query.filter(models.TemaClase.seccion == seccion)
 
-        resultados = query.order_by(models.TemaClase.fecha_programada.asc(), models.TemaClase.fecha_creacion.asc()).all()
+        evaluaciones = query.order_by(models.TemaClase.fecha_programada.asc(), models.TemaClase.fecha_creacion.asc()).all()
 
-        plan_dict = {}
-        for row in resultados:
-            t_id = row.tema_id
-            if t_id not in plan_dict:
-                plan_dict[t_id] = {
-                    'titulo_tema': row.titulo,
-                    'descripcion': row.descripcion,
-                    'fecha_programada': row.fecha_programada,
-                    'evaluaciones': []
-                }
-            if row.evaluacion_id:
-                plan_dict[t_id]['evaluaciones'].append({
-                    'id': row.evaluacion_id,
-                    'nombre': row.evaluacion_nombre
-                })
-        
-        plan_datos = list(plan_dict.values())
+        plan_datos = [
+            {
+                'titulo_tema': eval.titulo,
+                'descripcion': eval.descripcion,
+                'fecha_programada': eval.fecha_programada
+            } for eval in evaluaciones
+        ]
 
         response = render_template('docentes/fragmentos/_plan_evaluacion.html', plan_evaluacion=plan_datos)
         
@@ -303,14 +288,9 @@ def api_obtener_plan_evaluacion_json(docente_id, asignatura_id):
         seccion = request.args.get('seccion')
 
         query = db.session.query(
-            models.TemaClase.id.label('tema_id'),
             models.TemaClase.titulo,
             models.TemaClase.descripcion,
-            models.TemaClase.fecha_programada,
-            models.Evaluacion.id.label('evaluacion_id'),
-            models.Evaluacion.nombre.label('evaluacion_nombre')
-        ).outerjoin(
-            models.Evaluacion, models.TemaClase.id == models.Evaluacion.tema_id
+            models.TemaClase.fecha_programada
         ).filter(
             models.TemaClase.creado_por_id == docente_id,
             models.TemaClase.asignatura_id == asignatura_id
@@ -319,28 +299,18 @@ def api_obtener_plan_evaluacion_json(docente_id, asignatura_id):
         if seccion:
             query = query.filter(models.TemaClase.seccion == seccion)
 
-        resultados = query.order_by(
+        evaluaciones = query.order_by(
             models.TemaClase.fecha_programada.asc(), 
             models.TemaClase.fecha_creacion.asc()
         ).all()
 
-        plan_dict = {}
-        for row in resultados:
-            t_id = row.tema_id
-            if t_id not in plan_dict:
-                plan_dict[t_id] = {
-                    'titulo_tema': row.titulo,
-                    'descripcion': row.descripcion or '',
-                    'fecha_programada': row.fecha_programada.strftime('%Y-%m-%d') if row.fecha_programada else None,
-                    'evaluaciones': []
-                }
-            if row.evaluacion_id:
-                plan_dict[t_id]['evaluaciones'].append({
-                    'id': row.evaluacion_id,
-                    'nombre': row.evaluacion_nombre
-                })
-        
-        temas = list(plan_dict.values())
+        temas = []
+        for e in evaluaciones:
+            temas.append({
+                'titulo_tema': e.titulo,
+                'descripcion': e.descripcion or '',
+                'fecha_programada': e.fecha_programada.strftime('%Y-%m-%d') if e.fecha_programada else None
+            })
 
         return jsonify({"temas": temas}), 200
 

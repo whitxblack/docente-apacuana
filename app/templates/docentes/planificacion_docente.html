@@ -741,6 +741,34 @@ async function crearEvaluacion() {
   }
 }
 
+async function eliminarEvaluacion(id) {
+  if (!confirm('¿Estás seguro de eliminar esta evaluación?')) return;
+  
+  try {
+    const r = await fetch(`/docente/api/eliminar_evaluacion/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRFToken': CSRF }
+    });
+    const d = await r.json();
+    
+    if (r.ok && d.ok) {
+      toast('Evaluación eliminada correctamente.');
+      const row = document.getElementById(`evaluacion-row-${id}`);
+      if (row) {
+        const ul = row.parentElement;
+        row.remove();
+        if (ul.children.length === 0) {
+          ul.parentElement.innerHTML = '<span class="text-gray-400 italic block text-center">Sin evaluaciones</span>';
+        }
+      }
+    } else {
+      alert(d.error || 'Error al eliminar la evaluación.');
+    }
+  } catch (e) {
+    alert('Error de conexión al eliminar la evaluación.');
+  }
+}
+
 document.getElementById('modal-eval').addEventListener('click', function(e) {
   if (e.target === this) cerrarModalEval();
 });

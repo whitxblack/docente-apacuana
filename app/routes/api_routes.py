@@ -217,11 +217,15 @@ def crear_evaluacion():
             asignatura_id=asignatura_id, 
             periodo_id=periodo_id, 
             seccion=seccion,
+            tema_id=tema.id,
+            titulo_tema=tema.titulo,
+            descripcion=tema.descripcion or '',
             nombre=nombre, 
             tipo=tipo, 
             ponderacion=ponderacion,
             creado_por_id=docente_id,
             fecha_creacion=datetime.now(),
+            fecha_registro=datetime.now(),
             activa=True
         )
         db.session.add(ev)
@@ -235,6 +239,31 @@ def crear_evaluacion():
         traceback.print_exc()
         error_detail = str(e).split('\n')[0].strip()
         return jsonify({'error': f'DB Error: {error_detail}', 'traceback': traceback.format_exc()}), 500
+
+@api_bp.route('/eliminar_evaluacion/<int:id>', methods=['DELETE'])
+@login_required
+def eliminar_evaluacion(id):
+    try:
+        docente_id = session.get('usuario_id')
+        evaluacion = db.session.query(models.Evaluacion).filter_by(id=id, creado_por_id=docente_id).first()
+        
+        if not evaluacion:
+            return jsonify({'error': 'Evaluación no encontrada o no tiene permisos'}), 404
+            
+        # Verificar si tiene notas cargadas
+        notas = db.session.query(models.NotaEvaluacion).filter_by(evaluacion_id=id).first()
+        if notas:
+            return jsonify({'error': 'No se puede eliminar porque ya tiene notas'}), 400
+            
+        db.session.delete(evaluacion)
+        db.session.commit()
+        
+        return jsonify({'ok': True, 'mensaje': 'Evaluación eliminada correctamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"\n🚨 ERROR EN ELIMINAR EVALUACIÓN: {e}")
+        return jsonify({'error': 'Error interno al intentar eliminar la evaluación'}), 500
 
 @api_bp.route('/notas/guardar/', methods=['POST'])
 @login_required

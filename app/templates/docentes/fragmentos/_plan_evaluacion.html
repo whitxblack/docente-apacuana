@@ -11,6 +11,7 @@
                         <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Título del Tema</th>
                         <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Descripción</th>
                         <th class="py-3 px-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">Fecha Programada</th>
+                        <th class="py-3 px-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">Evaluaciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
@@ -42,6 +43,22 @@
                             {% endif %}
                             <!-- FIN LÓGICA DE VALIDACIÓN -->
 
+                        </td>
+                        <td class="py-3 px-4 text-sm align-top">
+                            {% if evaluacion.evaluaciones %}
+                                <ul class="space-y-2">
+                                {% for ev in evaluacion.evaluaciones %}
+                                    <li class="flex items-center justify-between bg-white border border-gray-200 p-2 rounded shadow-sm" id="evaluacion-row-{{ ev.id }}">
+                                        <span class="font-medium text-gray-800">{{ ev.nombre }}</span>
+                                        <button onclick="eliminarEvaluacion({{ ev.id }})" class="text-red-500 hover:text-red-700 transition flex items-center justify-center p-1" title="Borrar Evaluación">
+                                            <ion-icon name="trash-outline" class="text-lg"></ion-icon>
+                                        </button>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <span class="text-gray-400 italic block text-center">Sin evaluaciones</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

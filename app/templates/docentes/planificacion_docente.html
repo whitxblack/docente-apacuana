@@ -245,6 +245,47 @@
   </div>
 </div>
 
+<!-- ── Modal Nueva Evaluación ──────────────────────────────────────────────── -->
+<div id="modal-eval" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <form id="form-nueva-eval" onsubmit="event.preventDefault(); crearEvaluacion();" class="bg-surface-container border border-border rounded-2xl shadow-md w-full max-w-sm mx-4 p-6 space-y-5">
+    <div class="flex items-center justify-between">
+      <h4 class="font-headline font-bold text-base text-text-main">Nueva Evaluación</h4>
+      <button type="button" onclick="cerrarModalEval()" class="text-text-muted hover:text-text-main transition-colors">
+        <ion-icon name="close" class="text-xl"></ion-icon>
+      </button>
+    </div>
+    <input type="hidden" id="ev-tema-id" value="">
+    <div id="eval-error" class="hidden bg-error/10 border border-error/20 text-error text-xs rounded-xl px-3 py-2"></div>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Nombre</label>
+        <input id="ev-nombre" type="text" placeholder="Ej: Examen Parcial 1" required
+               class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-all placeholder:text-text-muted/50"/>
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Tipo</label>
+        <select id="ev-tipo" class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-all">
+          <option value="EXAMEN">Examen</option>
+          <option value="TAREA">Tarea</option>
+          <option value="PARTICIPACION">Participación</option>
+          <option value="PROYECTO">Proyecto</option>
+          <option value="PRACTICO">Trabajo Práctico</option>
+          <option value="OTRO">Otro</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Ponderación (%)</label>
+        <input id="ev-pond" type="number" min="1" max="100" step="0.5" placeholder="Ej: 30" required
+               class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-all placeholder:text-text-muted/50"/>
+      </div>
+    </div>
+    <button type="submit"
+            class="w-full bg-primary hover:bg-primary/80 text-text-main font-semibold py-2.5 rounded-xl text-sm transition-all shadow-neon-primary">
+      Crear Evaluación
+    </button>
+  </form>
+</div>
+
 {% endblock %}
 
 {% block extra_scripts %}
@@ -418,11 +459,14 @@ async function recargarTemas() {
                 ${matHtml || '<p class="text-xs text-text-muted/50 italic">Sin materiales.</p>'}
               </div>
             </div>
-            <!-- Tareas -->
+            <!-- Tareas y Evaluaciones -->
             <div class="p-4">
               <div class="flex items-center justify-between mb-3">
                 <span class="text-xs font-bold uppercase tracking-widest text-text-muted flex items-center gap-1"><ion-icon name="clipboard-outline" class="text-tertiary"></ion-icon> Tareas</span>
-                <button onclick="abrirModalTarea(${tema.id})" class="text-[10px] bg-tertiary/10 text-tertiary px-2 py-1 rounded font-bold hover:bg-tertiary hover:text-background transition-colors">ASIGNAR</button>
+                <div class="flex gap-1">
+                  <button onclick="abrirModalTarea(${tema.id})" class="text-[10px] bg-tertiary/10 text-tertiary px-2 py-1 rounded font-bold hover:bg-tertiary hover:text-background transition-colors">ASIGNAR</button>
+                  <button onclick="abrirModalEval(${tema.id})" class="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded font-bold hover:bg-primary hover:text-text-main transition-colors">EVALUAR</button>
+                </div>
               </div>
               <div class="space-y-1">
                 ${tarHtml || '<p class="text-xs text-text-muted/50 italic">Sin tareas asignadas.</p>'}
@@ -616,5 +660,89 @@ function cerrarVisorMaterial() {
   document.getElementById('modal-visor-material').classList.add('hidden');
   document.getElementById('visor-iframe').src = '';
 }
+
+// ── Evaluaciones
+function abrirModalEval(temaId) {
+  document.getElementById('ev-tema-id').value = temaId;
+  document.getElementById('eval-error').classList.add('hidden');
+  document.getElementById('ev-nombre').value = '';
+  document.getElementById('ev-pond').value = '';
+  document.getElementById('modal-eval').classList.remove('hidden');
+  document.getElementById('ev-nombre').focus();
+}
+
+function cerrarModalEval() { 
+  document.getElementById('modal-eval').classList.add('hidden'); 
+}
+
+async function crearEvaluacion() {
+  const temaId = document.getElementById('ev-tema-id').value;
+  const nombre = document.getElementById('ev-nombre').value.trim();
+  const tipo   = document.getElementById('ev-tipo').value;
+  const pond   = parseFloat(document.getElementById('ev-pond').value);
+  const errEl  = document.getElementById('eval-error');
+
+  if (!nombre || isNaN(pond) || pond <= 0) {
+    errEl.textContent = 'Completa todos los campos con valores válidos.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const btnSubmit = document.querySelector('#form-nueva-eval button[type="submit"]');
+  if (btnSubmit) btnSubmit.disabled = true;
+
+  try {
+    const r = await fetch('/docente/api/evaluacion/crear/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        asignatura_id: _asignaturaId,
+        periodo_id: _periodoId,
+        seccion: _seccion,
+        tema_id: temaId,
+        nombre, tipo,
+        ponderacion: pond
+      })
+    });
+
+    if (!r.ok) {
+      let errorMsg;
+      const contentType = r.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const errData = await r.json().catch(() => null);
+        errorMsg = errData?.error || `Error del servidor (HTTP ${r.status})`;
+      } else {
+        const rawText = await r.text().catch(() => '');
+        const match = rawText.match(/\<title\>(.*?)\<\/title\>/i) || rawText.match(/([^\n]{10,200})/m);
+        errorMsg = match ? match[1].replace(/<[^>]+>/g,'').trim() : `Error HTTP ${r.status}`;
+      }
+      errEl.textContent = errorMsg;
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('form-nueva-eval').reset();
+      errEl.classList.add('hidden');
+      cerrarModalEval();
+      toast(`Evaluación "${nombre}" creada.`);
+      // Opcional: si quisieras recargar temas para mostrar la evaluación en la lista de Tareas
+      // recargarTemas(); 
+    } else {
+      errEl.textContent = d.error || 'Error al crear evaluación.';
+      errEl.classList.remove('hidden');
+    }
+  } catch (err) {
+    errEl.textContent = `Error: ${err.message || 'Fallo de conexión.'}`;
+    errEl.classList.remove('hidden');
+  } finally {
+    if (btnSubmit) btnSubmit.disabled = false;
+  }
+}
+
+document.getElementById('modal-eval').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModalEval();
+});
 </script>
 {% endblock %}

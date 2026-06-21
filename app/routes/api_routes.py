@@ -180,6 +180,7 @@ def crear_evaluacion():
         asignatura_id = data.get('asignatura_id')
         periodo_id = data.get('periodo_id')
         seccion = data.get('seccion')
+        tema_id = data.get('tema_id')
         nombre = data.get('nombre')
         tipo = data.get('tipo', 'EXAMEN')
         # Handle case where ponderacion is explicitly null in JSON
@@ -187,7 +188,7 @@ def crear_evaluacion():
         ponderacion = float(pond_val) if pond_val is not None else 0.0
         docente_id = session.get('usuario_id')
         
-        if not all([asignatura_id, periodo_id, nombre]):
+        if not all([asignatura_id, periodo_id, nombre, tema_id]):
             return jsonify({'error': 'Campos requeridos incompletos'}), 400
             
         if not (0 < ponderacion <= 100):
@@ -207,12 +208,24 @@ def crear_evaluacion():
         if cierre:
             return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
             
+        tema = db.session.query(models.TemaClase).get(tema_id)
+        if not tema:
+            return jsonify({'error': 'Tema (Planificación) no encontrado'}), 404
+
         from datetime import datetime
         ev = models.Evaluacion(
-            asignatura_id=asignatura_id, periodo_id=periodo_id, seccion=seccion,
-            nombre=nombre, tipo=tipo, ponderacion=ponderacion,
+            asignatura_id=asignatura_id, 
+            periodo_id=periodo_id, 
+            seccion=seccion,
+            tema_id=tema.id,
+            titulo_tema=tema.titulo,
+            descripcion=tema.descripcion or '',
+            nombre=nombre, 
+            tipo=tipo, 
+            ponderacion=ponderacion,
             creado_por_id=docente_id,
             fecha_creacion=datetime.now(),
+            fecha_registro=datetime.now(),
             activa=True
         )
         db.session.add(ev)

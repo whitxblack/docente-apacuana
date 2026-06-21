@@ -383,7 +383,7 @@ async function cargarPlanificacion() {
 }
 
 async function recargarTemas() {
-  const r = await fetch(`/docente/api/planificacion/temas/?asignatura_id=${_asignaturaId}&periodo_id=${_periodoId}&seccion=${_seccion}`);
+  const r = await fetch(`/docente/api/planificacion/temas/?asignatura_id=${_asignaturaId}&periodo_id=${_periodoId}&seccion=${_seccion}&_t=${Date.now()}`);
   const d = await r.json();
   
   const cont = document.getElementById('contenedor-temas');
@@ -748,8 +748,7 @@ async function crearEvaluacion() {
       errEl.classList.add('hidden');
       cerrarModalEval();
       toast(`Evaluación "${nombre}" creada.`);
-      // Opcional: si quisieras recargar temas para mostrar la evaluación en la lista de Tareas
-      // recargarTemas(); 
+      recargarTemas(); 
     } else {
       errEl.textContent = d.error || 'Error al crear evaluación.';
       errEl.classList.remove('hidden');

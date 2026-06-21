@@ -113,6 +113,34 @@ def eliminar_tema():
         return jsonify({'ok': True})
     return jsonify({'error': 'Tema no encontrado'}), 404
 
+@planificacion_api_bp.route('/tema/editar/', methods=['POST'])
+@login_required
+def editar_tema():
+    data = request.json
+    tema_id = data.get('tema_id')
+    titulo = data.get('titulo')
+    descripcion = data.get('descripcion')
+    fecha_programada = data.get('fecha_programada')
+    
+    tema = db.session.query(models.TemaClase).get(tema_id)
+    if not tema:
+        return jsonify({'error': 'Tema no encontrado'}), 404
+        
+    cierre = db.session.query(models.PeriodoCierre).filter_by(
+        asignatura_id=tema.asignatura_id, periodo_id=tema.periodo_id, seccion=tema.seccion, cerrado=True
+    ).first()
+    if cierre:
+        return jsonify({'error': 'Período cerrado. Contacte al administrador.'}), 403
+        
+    fp = datetime.strptime(fecha_programada, '%Y-%m-%d') if fecha_programada else None
+    
+    tema.titulo = titulo
+    tema.descripcion = descripcion
+    tema.fecha_programada = fp
+    db.session.commit()
+    
+    return jsonify({'ok': True})
+
 @planificacion_api_bp.route('/material/subir/', methods=['POST'])
 @login_required
 def subir_material():

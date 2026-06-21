@@ -122,37 +122,37 @@
 
 <!-- ── Modal Subir Material ──────────────────────────────────────────────── -->
 <div id="modal-material" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-  <div class="bg-surface-container border border-border rounded-2xl shadow-md w-full max-w-sm mx-4 p-6 space-y-5">
+  <form id="formMaterialApoyo" onsubmit="event.preventDefault(); subirMaterial();" enctype="multipart/form-data" class="bg-surface-container border border-border rounded-2xl shadow-md w-full max-w-sm mx-4 p-6 space-y-5">
     <div class="flex items-center justify-between">
       <h4 class="font-headline font-bold text-base text-text-main">Añadir Material</h4>
-      <button onclick="cerrarModalMaterial()" class="text-text-muted hover:text-text-main transition-colors">
+      <button type="button" onclick="cerrarModalMaterial()" class="text-text-muted hover:text-text-main transition-colors">
         <ion-icon name="close" class="text-xl"></ion-icon>
       </button>
     </div>
-    <input type="hidden" id="mat-tema-id" value="">
+    <input type="hidden" id="mat-tema-id" name="tema_id" value="">
     <div id="mat-error" class="hidden bg-error/10 border border-error/20 text-error text-xs rounded-xl px-3 py-2"></div>
     <div class="space-y-3">
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Título del Material</label>
-        <input id="mat-titulo" type="text" placeholder="Ej: Diapositivas Clase 1"
+        <input id="mat-titulo" type="text" name="titulo" placeholder="Ej: Diapositivas Clase 1" required
                class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-all"/>
       </div>
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Enlace Externo (Opcional)</label>
-        <input id="mat-enlace" type="url" placeholder="https://..."
+        <input id="mat-enlace" type="url" name="enlace" placeholder="https://..."
                class="w-full bg-surface-element border border-border rounded-xl py-2.5 px-3 text-sm text-text-main focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/40 transition-all"/>
       </div>
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Archivo Adjunto (Opcional)</label>
-        <input id="mat-archivo" type="file"
+        <input id="mat-archivo" type="file" name="archivo" accept=".pdf, .xlsx, .xls"
                class="w-full bg-surface-element border border-border rounded-xl py-2 px-3 text-sm text-text-main focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 transition-all"/>
       </div>
     </div>
-    <button onclick="subirMaterial()"
+    <button type="submit"
             class="w-full bg-primary hover:bg-primary/80 text-text-main font-bold py-2.5 rounded-xl text-sm transition-all shadow-neon-primary flex items-center justify-center gap-2">
       <ion-icon name="cloud-upload-outline"></ion-icon> Subir Material
     </button>
-  </div>
+  </form>
 </div>
 
 <!-- ── Modal Nueva Tarea ──────────────────────────────────────────────── -->
@@ -598,30 +598,48 @@ function abrirModalMaterial(temaId) {
 function cerrarModalMaterial() { document.getElementById('modal-material').classList.add('hidden'); }
 
 async function subirMaterial() {
-  const temaId = document.getElementById('mat-tema-id').value;
-  const titulo = document.getElementById('mat-titulo').value.trim();
+  const fileInput = document.getElementById('mat-archivo');
+  const file = fileInput.files[0];
   const enlace = document.getElementById('mat-enlace').value.trim();
-  const archivo = document.getElementById('mat-archivo').files[0];
 
-  if(!titulo) { document.getElementById('mat-error').textContent = 'El título es obligatorio.'; document.getElementById('mat-error').classList.remove('hidden'); return; }
-  if(!enlace && !archivo) { document.getElementById('mat-error').textContent = 'Debes adjuntar un archivo o un enlace.'; document.getElementById('mat-error').classList.remove('hidden'); return; }
+  if (!enlace && !file) { 
+    document.getElementById('mat-error').textContent = 'Debes adjuntar un archivo o un enlace.'; 
+    document.getElementById('mat-error').classList.remove('hidden'); 
+    return false; 
+  }
 
-  const formData = new FormData();
-  formData.append('tema_id', temaId);
-  formData.append('titulo', titulo);
-  if(enlace) formData.append('enlace', enlace);
-  if(archivo) formData.append('archivo', archivo);
+  if (file) {
+    const extensionesPermitidas = /(\.pdf|\.xlsx|\.xls)$/i;
+    if (!extensionesPermitidas.exec(file.name)) {
+        document.getElementById('mat-error').textContent = 'Error: Solo se permiten archivos en formato PDF o Excel (.xlsx, .xls).';
+        document.getElementById('mat-error').classList.remove('hidden');
+        fileInput.value = ''; // Limpiar campo
+        return false;
+    }
+  }
 
-  const r = await fetch('/docente/api/planificacion/material/subir/', {
-    method: 'POST', headers: {'X-CSRFToken':CSRF}, body: formData
-  });
-  const d = await r.json();
-  if(d.ok) {
-    cerrarModalMaterial();
-    toast('Material añadido.');
-    recargarTemas();
-  } else {
-    document.getElementById('mat-error').textContent = d.error || 'Error al subir.'; document.getElementById('mat-error').classList.remove('hidden');
+  const form = document.getElementById('formMaterialApoyo');
+  const formData = new FormData(form);
+
+  try {
+    const r = await fetch('/docente/api/planificacion/material/subir/', {
+      method: 'POST', 
+      headers: {'X-CSRFToken':CSRF}, 
+      body: formData // FormData calcula automáticamente los headers de subida
+    });
+    const d = await r.json();
+    if(d.ok || d.success) {
+      cerrarModalMaterial();
+      toast('¡Material subido con éxito!');
+      recargarTemas(); // Recargar para mostrar el nuevo material listado
+    } else {
+      document.getElementById('mat-error').textContent = 'Error del servidor: ' + (d.message || d.error || 'Fallo desconocido.'); 
+      document.getElementById('mat-error').classList.remove('hidden');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('mat-error').textContent = 'Ocurrió un fallo en la conexión al subir el archivo.';
+    document.getElementById('mat-error').classList.remove('hidden');
   }
 }
 async function eliminarMaterial(id) {

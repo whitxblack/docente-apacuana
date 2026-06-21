@@ -141,9 +141,17 @@ def editar_tema():
     
     return jsonify({'ok': True})
 
+ALLOWED_EXTENSIONS = {'pdf', 'xlsx', 'xls'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @planificacion_api_bp.route('/material/subir/', methods=['POST'])
 @login_required
 def subir_material():
+    if 'archivo' in request.files and request.files['archivo'].filename != '' and not allowed_file(request.files['archivo'].filename):
+        return jsonify({'success': False, 'message': 'Formato no permitido. Solo se aceptan PDFs y archivos Excel.'}), 400
+
     tema_id = request.form.get('tema_id')
     titulo = request.form.get('titulo')
     enlace = request.form.get('enlace')
@@ -152,29 +160,36 @@ def subir_material():
     
     tema = db.session.query(models.TemaClase).get(tema_id)
     if not tema:
-        return jsonify({'error': 'Tema no encontrado'}), 404
+        return jsonify({'success': False, 'message': 'Tema no encontrado'}), 404
         
     cierre = db.session.query(models.PeriodoCierre).filter_by(
         asignatura_id=tema.asignatura_id, periodo_id=tema.periodo_id, seccion=tema.seccion, cerrado=True
     ).first()
     if cierre:
-        return jsonify({'error': 'Período cerrado.'}), 403
+        return jsonify({'success': False, 'message': 'Período cerrado.'}), 403
         
     file_path = None
-    if archivo:
-        filename = secure_filename(archivo.filename)
-        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'materiales')
-        os.makedirs(upload_folder, exist_ok=True)
-        file_path = f"materiales/{filename}"
-        archivo.save(os.path.join(upload_folder, filename))
-        
-    mat = models.MaterialApoyo(
-        tema_id=tema_id, titulo=titulo, enlace=enlace, archivo=file_path,
-        fecha_subida=datetime.now()
-    )
-    db.session.add(mat)
-    db.session.commit()
-    return jsonify({'ok': True})
+    if archivo and archivo.filename != '':
+        try:
+            filename = secure_filename(archivo.filename)
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'materiales')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = f"materiales/{filename}"
+            archivo.save(os.path.join(upload_folder, filename))
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Fallo al guardar archivo: {str(e)}'}), 500
+            
+    try:
+        mat = models.MaterialApoyo(
+            tema_id=tema_id, titulo=titulo, enlace=enlace, archivo=file_path,
+            fecha_subida=datetime.now()
+        )
+        db.session.add(mat)
+        db.session.commit()
+        return jsonify({'success': True, 'ok': True, 'message': 'Archivo guardado correctamente.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Fallo interno al registrar: {str(e)}'}), 500
 
 @planificacion_api_bp.route('/material/eliminar/', methods=['POST'])
 @login_required

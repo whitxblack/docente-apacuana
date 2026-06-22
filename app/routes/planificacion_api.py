@@ -188,10 +188,14 @@ def subir_material():
             import cloudinary
             import cloudinary.uploader
             
-            cloud_url = os.environ.get('CLOUDINARY_URL', '').replace('"', '').replace("'", "")
+            cloud_url = os.environ.get('CLOUDINARY_URL', '').replace('"', '').replace("'", "").strip()
+            if 'CLOUDINARY_URL=' in cloud_url:
+                cloud_url = cloud_url.split('CLOUDINARY_URL=', 1)[1].strip()
             
             if not cloud_url:
                 return jsonify({'success': False, 'message': 'Fallo: No se detectó la variable CLOUDINARY_URL en el sistema.'}), 500
+            
+            os.environ['CLOUDINARY_URL'] = cloud_url
             
             if "cloudinary://" in cloud_url:
                 cred_string = cloud_url.replace("cloudinary://", "")

@@ -215,7 +215,7 @@ def subir_material():
             )
             file_path = res.get('secure_url')
         except Exception as e:
-            return jsonify({'success': False, 'message': 'No fue posible subir el archivo. Intente nuevamente.'}), 500
+            return jsonify({'success': False, 'message': f'Fallo al subir a Cloudinary: {str(e)}'}), 500
             
     try:
         mat = models.MaterialApoyo(

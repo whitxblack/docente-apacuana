@@ -170,15 +170,15 @@ def subir_material():
         
     file_path = None
     if archivo and archivo.filename != '':
-        # Check size (Max 20MB)
+        # Check size (Max 10MB to align with Cloudinary free tier limits)
         archivo.seek(0, os.SEEK_END)
         file_length = archivo.tell()
         archivo.seek(0)
         
         if file_length == 0:
             return jsonify({'success': False, 'message': 'El archivo no puede estar vacío.'}), 400
-        if file_length > 20 * 1024 * 1024:
-            return jsonify({'success': False, 'message': 'El archivo excede el límite máximo permitido de 20 MB.'}), 400
+        if file_length > 10 * 1024 * 1024:
+            return jsonify({'success': False, 'message': 'El archivo excede el límite máximo permitido de 10 MB.'}), 400
             
         try:
             filename = secure_filename(archivo.filename)

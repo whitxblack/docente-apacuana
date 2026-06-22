@@ -455,37 +455,46 @@ function renderTablaAsistencia() {
 
   _estudiantes.forEach(est => {
     tbody.innerHTML += `
-      <tr class="hover:bg-surface-element transition-colors group block md:table-row border-b border-border mb-4 md:mb-0 pb-4 md:pb-0 last:border-0 last:mb-0" data-est="${est.estudiante_id}">
+      <tr class="hover:bg-surface-element transition-colors group block md:table-row border-b border-border mb-3 md:mb-0 pb-0 md:pb-0 last:border-0 last:mb-0" data-est="${est.estudiante_id}">
         <!-- Estudiante -->
-        <td class="px-5 py-4 md:py-3 block md:table-cell bg-surface-element/40 md:bg-transparent rounded-t-xl md:rounded-none">
-          <div class="flex items-center gap-4 md:gap-3">
-            <div class="w-12 h-12 md:w-8 md:h-8 rounded-full bg-border flex items-center justify-center text-text-muted font-bold text-base md:text-xs uppercase">
-              ${est.nombre.charAt(0)}
+        <td class="px-4 py-3 md:py-3 block md:table-cell cursor-pointer md:cursor-auto bg-surface md:bg-transparent rounded-xl md:rounded-none" onclick="toggleEstudiantePanel('${est.estudiante_id}')">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 md:w-8 md:h-8 rounded-full bg-border flex items-center justify-center text-text-muted font-bold text-sm md:text-xs uppercase">
+                ${est.nombre.charAt(0)}
+              </div>
+              <div class="flex-1">
+                <p class="font-bold text-text-main text-sm leading-tight line-clamp-1 max-w-[200px] md:max-w-none">${est.nombre}</p>
+                <p class="text-xs text-text-muted font-mono mt-0.5">V-${est.cedula}</p>
+              </div>
             </div>
-            <div>
-              <p class="font-bold text-text-main text-base md:text-sm leading-tight">${est.nombre}</p>
-              <p class="text-sm md:text-xs text-text-muted font-mono mt-0.5">V-${est.cedula}</p>
+            
+            <div class="md:hidden flex items-center gap-2">
+              <span id="badge-${est.estudiante_id}" class="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold bg-[#E6F4EA] text-[#137333] shadow-sm">P</span>
+              <div class="w-8 h-8 rounded-full bg-surface-element flex items-center justify-center">
+                <ion-icon name="chevron-down-outline" id="icon-expand-${est.estudiante_id}" class="text-text-muted transition-transform"></ion-icon>
+              </div>
             </div>
           </div>
         </td>
         
         <!-- Estado -->
-        <td class="px-5 py-3 block md:table-cell">
-          <span class="md:hidden block text-xs font-bold text-text-muted mb-3 uppercase tracking-wide">Estado de Asistencia</span>
-          <div class="flex items-center gap-2 justify-between md:justify-center bg-surface md:bg-transparent p-2 md:p-0 rounded-xl md:rounded-none border md:border-0 border-border">
-            <label class="flex flex-1 md:flex-none flex-col md:flex-row items-center justify-center gap-1.5 cursor-pointer p-2.5 md:p-0 rounded-lg hover:bg-[#E6F4EA] transition-colors" title="Presente">
+        <td id="td-estado-${est.estudiante_id}" class="px-4 pb-3 pt-2 md:px-5 md:py-3 hidden md:table-cell">
+          <span class="md:hidden block text-[10px] font-bold text-text-muted mb-2 uppercase tracking-wide">Asistencia</span>
+          <div class="flex items-center gap-2 justify-between md:justify-center bg-surface-element/30 md:bg-transparent p-1.5 md:p-0 rounded-xl md:rounded-none border md:border-0 border-border/50">
+            <label class="flex flex-1 md:flex-none flex-col md:flex-row items-center justify-center gap-1.5 cursor-pointer p-2 md:p-0 rounded-lg hover:bg-[#E6F4EA] transition-colors" title="Presente">
               <input type="radio" name="estado_${est.estudiante_id}" value="PRESENTE" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#137333] focus:ring-[#137333] w-5 h-5 md:w-4 md:h-4" checked>
               <span class="text-[11px] md:text-xs font-bold text-text-main mt-1 md:mt-0">P <span class="md:hidden">res</span></span>
             </label>
-            <label class="flex flex-1 md:flex-none flex-col md:flex-row items-center justify-center gap-1.5 cursor-pointer p-2.5 md:p-0 rounded-lg hover:bg-[#FCE8E6] transition-colors" title="Ausente">
+            <label class="flex flex-1 md:flex-none flex-col md:flex-row items-center justify-center gap-1.5 cursor-pointer p-2 md:p-0 rounded-lg hover:bg-[#FCE8E6] transition-colors" title="Ausente">
               <input type="radio" name="estado_${est.estudiante_id}" value="AUSENTE" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#C5221F] focus:ring-[#C5221F] w-5 h-5 md:w-4 md:h-4">
               <span class="text-[11px] md:text-xs font-bold text-text-main mt-1 md:mt-0">A <span class="md:hidden">us</span></span>
             </label>
-            <label class="flex flex-1 md:flex-none flex-col md:flex-row items-center justify-center gap-1.5 cursor-pointer p-2.5 md:p-0 rounded-lg hover:bg-[#FEF7E0] transition-colors" title="Retardo">
+            <label class="flex flex-1 md:flex-none flex-col md:flex-row items-center justify-center gap-1.5 cursor-pointer p-2 md:p-0 rounded-lg hover:bg-[#FEF7E0] transition-colors" title="Retardo">
               <input type="radio" name="estado_${est.estudiante_id}" value="RETARDO" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#B06000] focus:ring-[#B06000] w-5 h-5 md:w-4 md:h-4">
               <span class="text-[11px] md:text-xs font-bold text-text-main mt-1 md:mt-0">R <span class="md:hidden">et</span></span>
             </label>
-            <label class="flex flex-1 md:flex-none flex-col md:flex-row items-center justify-center gap-1.5 cursor-pointer p-2.5 md:p-0 rounded-lg hover:bg-[#E8F0FE] transition-colors" title="Justificado">
+            <label class="flex flex-1 md:flex-none flex-col md:flex-row items-center justify-center gap-1.5 cursor-pointer p-2 md:p-0 rounded-lg hover:bg-[#E8F0FE] transition-colors" title="Justificado">
               <input type="radio" name="estado_${est.estudiante_id}" value="JUSTIFICADO" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#1967D2] focus:ring-[#1967D2] w-5 h-5 md:w-4 md:h-4">
               <span class="text-[11px] md:text-xs font-bold text-text-main mt-1 md:mt-0">J <span class="md:hidden">ust</span></span>
             </label>
@@ -493,20 +502,20 @@ function renderTablaAsistencia() {
         </td>
 
         <!-- Hora Llegada -->
-        <td class="px-5 py-3 block md:table-cell">
-          <span class="md:hidden block text-xs font-bold text-text-muted mb-3 uppercase tracking-wide">Hora de Llegada</span>
+        <td id="td-hora-${est.estudiante_id}" class="px-4 pb-3 md:px-5 md:py-3 hidden md:table-cell">
+          <span class="md:hidden block text-[10px] font-bold text-text-muted mb-2 uppercase tracking-wide">Llegada</span>
           <div class="flex items-center justify-center gap-1.5 relative w-full md:max-w-[140px] md:mx-auto">
             <input type="time" data-est="${est.estudiante_id}" data-field="hora" onchange="actualizarAMPM(this)" oninput="actualizarAMPM(this)"
-                   class="asist-hora w-full pl-4 md:pl-3 pr-12 md:pr-10 py-3 md:py-2 bg-surface border border-border rounded-xl text-text-main text-base md:text-sm font-medium focus:border-primary focus:outline-none [color-scheme:dark] shadow-sm"/>
-            <span class="absolute right-0 text-xs font-bold text-text-muted w-12 md:w-8 text-center pointer-events-none" id="ampm-${est.estudiante_id}"></span>
+                   class="asist-hora w-full pl-3 md:pl-3 pr-10 md:pr-10 py-2.5 md:py-2 bg-surface border border-border rounded-xl text-text-main text-sm md:text-sm font-medium focus:border-primary focus:outline-none [color-scheme:dark] shadow-sm"/>
+            <span class="absolute right-0 text-xs font-bold text-text-muted w-10 md:w-8 text-center pointer-events-none" id="ampm-${est.estudiante_id}"></span>
           </div>
         </td>
 
         <!-- Notas -->
-        <td class="px-5 py-3 block md:table-cell rounded-b-xl md:rounded-none">
-          <span class="md:hidden block text-xs font-bold text-text-muted mb-3 uppercase tracking-wide">Observación</span>
+        <td id="td-obs-${est.estudiante_id}" class="px-4 pb-4 md:px-5 md:py-3 hidden md:table-cell rounded-b-xl md:rounded-none">
+          <span class="md:hidden block text-[10px] font-bold text-text-muted mb-2 uppercase tracking-wide">Observación</span>
           <input type="text" data-est="${est.estudiante_id}" data-field="obs" maxlength="500" placeholder="Añadir nota..."
-                 class="asist-obs w-full bg-surface border border-border rounded-xl md:rounded-lg py-3 md:py-2 px-4 md:px-3 text-base md:text-xs text-text-main focus:outline-none focus:border-primary transition-all placeholder:text-text-muted/60 shadow-sm"/>
+                 class="asist-obs w-full bg-surface border border-border rounded-xl md:rounded-lg py-2.5 md:py-2 px-3 md:px-3 text-sm md:text-xs text-text-main focus:outline-none focus:border-primary transition-all placeholder:text-text-muted/60 shadow-sm"/>
         </td>
       </tr>
     `;
@@ -653,15 +662,59 @@ function marcarTodos(estado) {
   actualizarContadores();
 }
 
+function toggleEstudiantePanel(estId) {
+  if (window.innerWidth >= 768) return; // Only toggle on mobile
+  const ids = [`td-estado-${estId}`, `td-hora-${estId}`, `td-obs-${estId}`];
+  const icon = document.getElementById(`icon-expand-${estId}`);
+  
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.classList.contains('hidden')) {
+      el.classList.remove('hidden');
+      el.classList.add('block');
+    } else {
+      el.classList.add('hidden');
+      el.classList.remove('block');
+    }
+  });
+
+  if (icon) {
+    if (icon.classList.contains('rotate-180')) {
+      icon.classList.remove('rotate-180');
+    } else {
+      icon.classList.add('rotate-180');
+    }
+  }
+}
+
+function actualizarBadge(estId, estado) {
+  const badge = document.getElementById(`badge-${estId}`);
+  if (!badge) return;
+  if (estado === 'PRESENTE') {
+    badge.textContent = 'P';
+    badge.className = 'w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold bg-[#E6F4EA] text-[#137333] shadow-sm transition-colors';
+  } else if (estado === 'AUSENTE') {
+    badge.textContent = 'A';
+    badge.className = 'w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold bg-[#FCE8E6] text-[#C5221F] shadow-sm transition-colors';
+  } else if (estado === 'RETARDO') {
+    badge.textContent = 'R';
+    badge.className = 'w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold bg-[#FEF7E0] text-[#B06000] shadow-sm transition-colors';
+  } else if (estado === 'JUSTIFICADO') {
+    badge.textContent = 'J';
+    badge.className = 'w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold bg-[#E8F0FE] text-[#1967D2] shadow-sm transition-colors';
+  }
+}
+
 // ── Contadores y Estilos ──────────────────────────────────────────────────────
 function actualizarContadores() {
   let p = 0, a = 0, r = 0, j = 0;
   document.querySelectorAll('.asist-estado:checked').forEach(sel => {
     switch(sel.value) {
-      case 'PRESENTE': p++; break;
-      case 'AUSENTE': a++; break;
-      case 'RETARDO': r++; break;
-      case 'JUSTIFICADO': j++; break;
+      case 'PRESENTE': p++; actualizarBadge(sel.dataset.est, 'PRESENTE'); break;
+      case 'AUSENTE': a++; actualizarBadge(sel.dataset.est, 'AUSENTE'); break;
+      case 'RETARDO': r++; actualizarBadge(sel.dataset.est, 'RETARDO'); break;
+      case 'JUSTIFICADO': j++; actualizarBadge(sel.dataset.est, 'JUSTIFICADO'); break;
     }
   });
   

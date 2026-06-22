@@ -479,20 +479,20 @@ function renderTablaAsistencia() {
         
         <!-- Estado -->
         <td id="td-estado-${est.estudiante_id}" class="px-4 pb-3 pt-2 md:px-5 md:py-3 block md:table-cell bg-surface md:bg-transparent w-full">
-          <div class="flex flex-row items-center bg-surface-element/30 md:bg-transparent p-1 md:p-0 rounded-xl md:rounded-none border md:border-0 border-border/50 w-full overflow-hidden">
-            <label class="flex flex-col md:flex-row items-center justify-center cursor-pointer py-2 md:py-0 hover:bg-[#E6F4EA] transition-colors" style="width: 25%;" title="Presente">
+          <div class="flex flex-row items-center overflow-x-auto hide-scrollbar bg-surface-element/30 md:bg-transparent p-1 md:p-0 rounded-xl md:rounded-none border md:border-0 border-border/50 w-full">
+            <label class="flex flex-col md:flex-row items-center justify-center cursor-pointer py-2 md:py-0 hover:bg-[#E6F4EA] transition-colors flex-none min-w-[75px] md:flex-1 md:min-w-0" title="Presente">
               <input type="radio" name="estado_${est.estudiante_id}" value="PRESENTE" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#137333] focus:ring-[#137333] w-5 h-5 md:w-4 md:h-4" checked>
               <span class="text-[12px] md:text-xs font-bold text-text-main mt-1 md:mt-0 text-center block w-full">P<span class="hidden md:inline">res</span></span>
             </label>
-            <label class="flex flex-col md:flex-row items-center justify-center cursor-pointer py-2 md:py-0 hover:bg-[#FCE8E6] transition-colors border-l border-border/30 md:border-0" style="width: 25%;" title="Ausente">
+            <label class="flex flex-col md:flex-row items-center justify-center cursor-pointer py-2 md:py-0 hover:bg-[#FCE8E6] transition-colors border-l border-border/30 md:border-0 flex-none min-w-[75px] md:flex-1 md:min-w-0" title="Ausente">
               <input type="radio" name="estado_${est.estudiante_id}" value="AUSENTE" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#C5221F] focus:ring-[#C5221F] w-5 h-5 md:w-4 md:h-4">
               <span class="text-[12px] md:text-xs font-bold text-text-main mt-1 md:mt-0 text-center block w-full">A<span class="hidden md:inline">us</span></span>
             </label>
-            <label class="flex flex-col md:flex-row items-center justify-center cursor-pointer py-2 md:py-0 hover:bg-[#FEF7E0] transition-colors border-l border-border/30 md:border-0" style="width: 25%;" title="Retardo">
+            <label class="flex flex-col md:flex-row items-center justify-center cursor-pointer py-2 md:py-0 hover:bg-[#FEF7E0] transition-colors border-l border-border/30 md:border-0 flex-none min-w-[75px] md:flex-1 md:min-w-0" title="Retardo">
               <input type="radio" name="estado_${est.estudiante_id}" value="RETARDO" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#B06000] focus:ring-[#B06000] w-5 h-5 md:w-4 md:h-4">
               <span class="text-[12px] md:text-xs font-bold text-text-main mt-1 md:mt-0 text-center block w-full">R<span class="hidden md:inline">et</span></span>
             </label>
-            <label class="flex flex-col md:flex-row items-center justify-center cursor-pointer py-2 md:py-0 hover:bg-[#E8F0FE] transition-colors border-l border-border/30 md:border-0" style="width: 25%;" title="Justificado">
+            <label class="flex flex-col md:flex-row items-center justify-center cursor-pointer py-2 md:py-0 hover:bg-[#E8F0FE] transition-colors border-l border-border/30 md:border-0 flex-none min-w-[75px] md:flex-1 md:min-w-0" title="Justificado">
               <input type="radio" name="estado_${est.estudiante_id}" value="JUSTIFICADO" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#1967D2] focus:ring-[#1967D2] w-5 h-5 md:w-4 md:h-4">
               <span class="text-[12px] md:text-xs font-bold text-text-main mt-1 md:mt-0 text-center block w-full">J<span class="hidden md:inline">ust</span></span>
             </label>

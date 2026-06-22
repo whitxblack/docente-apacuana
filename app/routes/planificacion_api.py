@@ -181,8 +181,26 @@ def subir_material():
                     import cloudinary
                     import cloudinary.uploader
                     
-                    # La configuración se toma automáticamente de la variable de entorno CLOUDINARY_URL
-                    cloudinary.config(secure=True)
+                    cloud_url = os.environ.get('CLOUDINARY_URL', '').replace('"', '').replace("'", "")
+                    
+                    if not cloud_url:
+                        return jsonify({'success': False, 'message': 'Fallo: Vercel no detectó la variable CLOUDINARY_URL. Asegúrate de hacer un Redeploy.'}), 500
+                    
+                    if "cloudinary://" in cloud_url:
+                        # Extraer credenciales manualmente: cloudinary://api_key:api_secret@cloud_name
+                        cred_string = cloud_url.replace("cloudinary://", "")
+                        auth_part, cloud_name = cred_string.split("@")
+                        api_key, api_secret = auth_part.split(":")
+                        
+                        cloudinary.config(
+                            cloud_name=cloud_name,
+                            api_key=api_key,
+                            api_secret=api_secret,
+                            secure=True
+                        )
+                    else:
+                        # Fallback por si la detecta automática
+                        cloudinary.config(secure=True)
                     
                     # Para PDFs, Excels, Word etc, debemos usar resource_type='raw'
                     res = cloudinary.uploader.upload(
@@ -193,7 +211,7 @@ def subir_material():
                     )
                     file_path = res.get('secure_url')
                 except Exception as ex_cloud:
-                    return jsonify({'success': False, 'message': f'Fallo al subir a Cloudinary: {str(ex_cloud)}. Asegúrate de configurar CLOUDINARY_URL en .env o Vercel.'}), 500
+                    return jsonify({'success': False, 'message': f'Fallo al subir a Cloudinary: {str(ex_cloud)}. URL: {os.environ.get("CLOUDINARY_URL", "Vacia")}'}), 500
             else:
                 # Modo Local: Guardar en el disco
                 upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'materiales')

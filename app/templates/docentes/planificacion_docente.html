@@ -144,7 +144,7 @@
       </div>
       <div>
         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1.5">Archivo Adjunto (Opcional)</label>
-        <input id="mat-archivo" type="file" name="archivo" accept=".pdf, .xlsx, .xls"
+        <input id="mat-archivo" type="file" name="archivo" accept=".pdf, .doc, .docx, .ppt, .pptx, .xls, .xlsx, .txt"
                class="w-full bg-surface-element border border-border rounded-xl py-2 px-3 text-sm text-text-main focus:outline-none file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 transition-all"/>
       </div>
     </div>
@@ -424,21 +424,38 @@ async function recargarTemas() {
   } else {
     document.getElementById('estado-vacio-temas').classList.add('hidden');
     d.temas.forEach(tema => {
-      let matHtml = tema.materiales.map(m => `
+      let matHtml = tema.materiales.map(m => {
+        let textBtn = 'Abrir Archivo';
+        if(m.archivo) {
+            const ext = m.archivo.split('.').pop().toLowerCase();
+            if(ext === 'pdf') textBtn = 'Ver PDF';
+            else if(['doc', 'docx'].includes(ext)) textBtn = 'Ver Documento';
+            else if(['ppt', 'pptx'].includes(ext)) textBtn = 'Ver Presentación';
+            else if(['xls', 'xlsx'].includes(ext)) textBtn = 'Ver Excel';
+            else if(ext === 'txt') textBtn = 'Ver TXT';
+        } else if(m.enlace) {
+            textBtn = 'Ver Enlace';
+        }
+        return `
         <div class="flex items-center justify-between py-2 border-b border-border/50 last:border-0 group">
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center">
-              <ion-icon name="${m.archivo ? 'document-outline' : 'link-outline'}"></ion-icon>
+          <div class="flex flex-col gap-1 w-full">
+            <div class="flex items-center justify-between w-full">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                  <ion-icon name="${m.archivo ? 'document-outline' : 'link-outline'}"></ion-icon>
+                </div>
+                <span class="text-sm font-medium text-text-main">${m.titulo}</span>
+              </div>
+              <button onclick="eliminarMaterial(${m.id})" class="text-text-muted hover:text-error opacity-0 group-hover:opacity-100 transition-all p-1">
+                <ion-icon name="trash-outline"></ion-icon>
+              </button>
             </div>
-            <button onclick="abrirVisorMaterial('${m.archivo || m.enlace}', '${m.titulo.replace(/'/g, "\\'")}')" class="text-sm font-medium hover:text-primary transition-colors hover:underline text-left">
-              ${m.titulo}
-            </button>
+            <a href="${m.archivo || m.enlace}" target="_blank" class="ml-8 text-xs font-semibold text-primary hover:text-primary/80 transition-colors hover:underline w-fit">
+              <ion-icon name="open-outline" class="align-middle"></ion-icon> ${textBtn}
+            </a>
           </div>
-          <button onclick="eliminarMaterial(${m.id})" class="text-text-muted hover:text-error opacity-0 group-hover:opacity-100 transition-all p-1">
-            <ion-icon name="trash-outline"></ion-icon>
-          </button>
         </div>
-      `).join('');
+      `}).join('');
 
       let tarHtml = tema.tareas.map(t => `
         <div class="flex items-start justify-between py-2 border-b border-border/50 last:border-0 group">
@@ -609,17 +626,29 @@ async function subirMaterial() {
   }
 
   if (file) {
-    const extensionesPermitidas = /(\.pdf|\.xlsx|\.xls)$/i;
+    const extensionesPermitidas = /(\.pdf|\.doc|\.docx|\.ppt|\.pptx|\.xls|\.xlsx|\.txt)$/i;
     if (!extensionesPermitidas.exec(file.name)) {
-        document.getElementById('mat-error').textContent = 'Error: Solo se permiten archivos en formato PDF o Excel (.xlsx, .xls).';
+        document.getElementById('mat-error').textContent = 'Error: Solo se permiten archivos en formato PDF, Word, PowerPoint, Excel y TXT.';
         document.getElementById('mat-error').classList.remove('hidden');
         fileInput.value = ''; // Limpiar campo
+        return false;
+    }
+    const max_size = 20 * 1024 * 1024;
+    if (file.size > max_size) {
+        document.getElementById('mat-error').textContent = 'El archivo excede el límite máximo permitido de 20 MB.';
+        document.getElementById('mat-error').classList.remove('hidden');
+        fileInput.value = '';
         return false;
     }
   }
 
   const form = document.getElementById('formMaterialApoyo');
   const formData = new FormData(form);
+  
+  const btnSubmit = document.querySelector('#formMaterialApoyo button[type="submit"]');
+  const originalBtnHtml = btnSubmit.innerHTML;
+  btnSubmit.disabled = true;
+  btnSubmit.innerHTML = '<ion-icon name="sync-outline" class="animate-spin"></ion-icon> Subiendo...';
 
   try {
     const r = await fetch('/docente/api/planificacion/material/subir/', {
@@ -630,7 +659,7 @@ async function subirMaterial() {
     const d = await r.json();
     if(d.ok || d.success) {
       cerrarModalMaterial();
-      toast('¡Material subido con éxito!');
+      toast('Material cargado correctamente.');
       recargarTemas(); // Recargar para mostrar el nuevo material listado
     } else {
       document.getElementById('mat-error').textContent = 'Error del servidor: ' + (d.message || d.error || 'Fallo desconocido.'); 
@@ -638,8 +667,11 @@ async function subirMaterial() {
     }
   } catch (error) {
     console.error('Error:', error);
-    document.getElementById('mat-error').textContent = 'Ocurrió un fallo en la conexión al subir el archivo.';
+    document.getElementById('mat-error').textContent = 'No fue posible subir el archivo. Intente nuevamente.';
     document.getElementById('mat-error').classList.remove('hidden');
+  } finally {
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = originalBtnHtml;
   }
 }
 async function eliminarMaterial(id) {

@@ -141,7 +141,7 @@ def editar_tema():
     
     return jsonify({'ok': True})
 
-ALLOWED_EXTENSIONS = {'pdf', 'xlsx', 'xls'}
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -150,7 +150,7 @@ def allowed_file(filename):
 @login_required
 def subir_material():
     if 'archivo' in request.files and request.files['archivo'].filename != '' and not allowed_file(request.files['archivo'].filename):
-        return jsonify({'success': False, 'message': 'Formato no permitido. Solo se aceptan PDFs y archivos Excel.'}), 400
+        return jsonify({'success': False, 'message': 'Formato no permitido. Consulte los tipos de archivo válidos.'}), 400
 
     tema_id = request.form.get('tema_id')
     titulo = request.form.get('titulo')
@@ -170,56 +170,52 @@ def subir_material():
         
     file_path = None
     if archivo and archivo.filename != '':
+        # Check size (Max 20MB)
+        archivo.seek(0, os.SEEK_END)
+        file_length = archivo.tell()
+        archivo.seek(0)
+        
+        if file_length == 0:
+            return jsonify({'success': False, 'message': 'El archivo no puede estar vacío.'}), 400
+        if file_length > 20 * 1024 * 1024:
+            return jsonify({'success': False, 'message': 'El archivo excede el límite máximo permitido de 20 MB.'}), 400
+            
         try:
             filename = secure_filename(archivo.filename)
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             safe_name = f"{timestamp}_{filename}"
 
-            if os.environ.get('VERCEL') or os.environ.get('CLOUDINARY_URL'):
-                # Modo Cloud: Guardar en Cloudinary
-                try:
-                    import cloudinary
-                    import cloudinary.uploader
-                    
-                    cloud_url = os.environ.get('CLOUDINARY_URL', '').replace('"', '').replace("'", "")
-                    
-                    if not cloud_url:
-                        return jsonify({'success': False, 'message': 'Fallo: Vercel no detectó la variable CLOUDINARY_URL. Asegúrate de hacer un Redeploy.'}), 500
-                    
-                    if "cloudinary://" in cloud_url:
-                        # Extraer credenciales manualmente: cloudinary://api_key:api_secret@cloud_name
-                        cred_string = cloud_url.replace("cloudinary://", "")
-                        auth_part, cloud_name = cred_string.split("@")
-                        api_key, api_secret = auth_part.split(":")
-                        
-                        cloudinary.config(
-                            cloud_name=cloud_name,
-                            api_key=api_key,
-                            api_secret=api_secret,
-                            secure=True
-                        )
-                    else:
-                        # Fallback por si la detecta automática
-                        cloudinary.config(secure=True)
-                    
-                    # Para PDFs, Excels, Word etc, debemos usar resource_type='raw'
-                    res = cloudinary.uploader.upload(
-                        archivo,
-                        resource_type="raw",
-                        public_id=f"materiales/{safe_name}",
-                        use_filename=True
-                    )
-                    file_path = res.get('secure_url')
-                except Exception as ex_cloud:
-                    return jsonify({'success': False, 'message': f'Fallo al subir a Cloudinary: {str(ex_cloud)}. URL: {os.environ.get("CLOUDINARY_URL", "Vacia")}'}), 500
+            import cloudinary
+            import cloudinary.uploader
+            
+            cloud_url = os.environ.get('CLOUDINARY_URL', '').replace('"', '').replace("'", "")
+            
+            if not cloud_url:
+                return jsonify({'success': False, 'message': 'Fallo: No se detectó la variable CLOUDINARY_URL en el sistema.'}), 500
+            
+            if "cloudinary://" in cloud_url:
+                cred_string = cloud_url.replace("cloudinary://", "")
+                auth_part, cloud_name = cred_string.split("@")
+                api_key, api_secret = auth_part.split(":")
+                
+                cloudinary.config(
+                    cloud_name=cloud_name,
+                    api_key=api_key,
+                    api_secret=api_secret,
+                    secure=True
+                )
             else:
-                # Modo Local: Guardar en el disco
-                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'materiales')
-                os.makedirs(upload_folder, exist_ok=True)
-                file_path = f"materiales/{safe_name}"
-                archivo.save(os.path.join(upload_folder, safe_name))
+                cloudinary.config(secure=True)
+            
+            res = cloudinary.uploader.upload(
+                archivo,
+                resource_type="raw",
+                public_id=f"materiales/{safe_name}",
+                use_filename=True
+            )
+            file_path = res.get('secure_url')
         except Exception as e:
-            return jsonify({'success': False, 'message': f'Fallo al guardar archivo: {str(e)}'}), 500
+            return jsonify({'success': False, 'message': 'No fue posible subir el archivo. Intente nuevamente.'}), 500
             
     try:
         mat = models.MaterialApoyo(

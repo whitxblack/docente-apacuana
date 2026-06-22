@@ -108,11 +108,11 @@
 
     <!-- Tabla Excel -->
     <div class="bg-surface-container/60 border border-border rounded-2xl overflow-hidden shadow-md">
-      <div class="overflow-x-auto custom-scrollbar">
-        <table class="w-full text-left border-collapse" id="tabla-notas">
+      <div class="w-full overflow-x-auto scrolling-touch custom-scrollbar">
+        <table class="w-full min-w-[800px] text-left border-collapse" id="tabla-notas">
           <thead id="thead-notas">
             <tr class="bg-surface-element/50 border-b border-border text-[10px] uppercase tracking-wider text-text-muted">
-              <th class="px-4 py-3 sticky left-0 bg-surface-element z-10 min-w-[200px]">Estudiante</th>
+              <th class="px-4 py-3 md:sticky md:left-0 bg-surface-element z-10 min-w-[200px]">Estudiante</th>
               <!-- columnas inyectadas por JS -->
               <th class="px-4 py-3 text-right text-primary font-bold bg-primary/5">Promedio Pond.</th>
             </tr>
@@ -396,7 +396,7 @@ function renderTabla() {
   const thead = document.getElementById('thead-notas').querySelector('tr');
   const tbody = document.getElementById('tbody-notas');
 
-  thead.innerHTML = `<th class="px-4 py-3 sticky left-0 bg-surface-element/80 z-10 min-w-[200px] text-[10px] uppercase tracking-wider text-text-muted">Estudiante</th>`;
+  thead.innerHTML = `<th class="px-4 py-3 md:sticky md:left-0 bg-surface-element/80 z-10 min-w-[200px] text-[10px] uppercase tracking-wider text-text-muted">Estudiante</th>`;
   _evaluaciones.forEach(ev => {
     thead.innerHTML += `<th class="px-4 py-3 text-center text-[10px] uppercase tracking-wider text-text-muted whitespace-nowrap">
       ${ev.nombre}<br><span class="text-primary font-bold">${ev.ponderacion}%</span>
@@ -417,7 +417,7 @@ function renderTabla() {
 
   _estudiantes.forEach(est => {
     let tr = `<tr class="hover:bg-white/3 transition-colors border-b border-border estudiante-row" data-search="${est.nombre.toLowerCase()} v-${est.cedula}">
-      <td class="px-4 py-2.5 sticky left-0 bg-surface-container z-10 font-semibold text-text-main text-xs">
+      <td class="px-4 py-2.5 md:sticky md:left-0 bg-surface-container z-10 font-semibold text-text-main text-xs">
         ${est.nombre}<br><span class="text-text-muted font-normal">V-${est.cedula}</span>
       </td>`;
     

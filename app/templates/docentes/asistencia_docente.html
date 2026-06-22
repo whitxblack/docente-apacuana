@@ -459,22 +459,31 @@ function renderTablaAsistencia() {
             </div>
           </div>
         </td>
-        <td class="px-5 py-3 text-center">
-          <div class="relative inline-block w-full">
-            <select data-est="${est.estudiante_id}" data-nombre="${est.nombre}" data-field="estado" onchange="handleEstadoChange(this)"
-                    class="asist-estado w-full bg-surface border border-border rounded-lg py-2 px-3 text-xs font-bold focus:outline-none transition-all text-center cursor-pointer shadow-sm">
-              <option value="PRESENTE">✅ Presente</option>
-              <option value="AUSENTE">❌ Ausente</option>
-              <option value="RETARDO">⏰ Retardo</option>
-              <option value="JUSTIFICADO">📋 Justificado</option>
-            </select>
+        <td class="px-5 py-3">
+          <div class="flex items-center gap-3 justify-start sm:justify-center">
+            <label class="flex items-center gap-1 cursor-pointer" title="Presente">
+              <input type="radio" name="estado_${est.estudiante_id}" value="PRESENTE" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#137333] focus:ring-[#137333] w-4 h-4" checked>
+              <span class="text-xs font-bold text-text-main">P</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer" title="Ausente">
+              <input type="radio" name="estado_${est.estudiante_id}" value="AUSENTE" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#C5221F] focus:ring-[#C5221F] w-4 h-4">
+              <span class="text-xs font-bold text-text-main">A</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer" title="Retardo">
+              <input type="radio" name="estado_${est.estudiante_id}" value="RETARDO" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#B06000] focus:ring-[#B06000] w-4 h-4">
+              <span class="text-xs font-bold text-text-main">R</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer" title="Justificado">
+              <input type="radio" name="estado_${est.estudiante_id}" value="JUSTIFICADO" data-est="${est.estudiante_id}" data-nombre="${est.nombre}" onchange="handleEstadoChange(this)" class="asist-estado text-[#1967D2] focus:ring-[#1967D2] w-4 h-4">
+              <span class="text-xs font-bold text-text-main">J</span>
+            </label>
           </div>
         </td>
         <td class="px-5 py-3 text-center">
-          <div class="flex items-center justify-center gap-1.5">
+          <div class="flex items-center justify-center gap-1.5 relative max-w-[140px] mx-auto">
             <input type="time" data-est="${est.estudiante_id}" data-field="hora" onchange="actualizarAMPM(this)" oninput="actualizarAMPM(this)"
-                   class="asist-hora bg-surface border border-border rounded-lg py-2 px-3 text-xs text-text-main focus:outline-none focus:border-primary transition-all w-24 text-center shadow-sm"/>
-            <span class="text-xs font-bold text-text-muted w-10 text-left" id="ampm-${est.estudiante_id}"></span>
+                   class="asist-hora w-full pl-3 pr-10 py-2 bg-surface border border-border rounded-xl text-text-main text-sm font-medium focus:border-primary focus:outline-none [color-scheme:dark] shadow-sm"/>
+            <span class="absolute right-0 text-xs font-bold text-text-muted w-8 text-center pointer-events-none" id="ampm-${est.estudiante_id}"></span>
           </div>
         </td>
         <td class="px-5 py-3">
@@ -498,11 +507,12 @@ async function cargarRegistrosFecha() {
 
   _estudiantes.forEach(est => {
     const reg = regs[String(est.estudiante_id)];
-    const selectEl = document.querySelector(`select[data-est="${est.estudiante_id}"]`);
+    const estadoToSet = reg ? reg.estado : 'PRESENTE';
+    const selectEl = document.querySelector(`input[name="estado_${est.estudiante_id}"][value="${estadoToSet}"]`);
     const horaEl = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="hora"]`);
     const obsEl = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="obs"]`);
     
-    if (selectEl) selectEl.value = reg ? reg.estado : 'PRESENTE';
+    if (selectEl) selectEl.checked = true;
     if (horaEl) {
       horaEl.value = reg && reg.hora_llegada ? reg.hora_llegada : '';
       const ampmSpan = document.getElementById(`ampm-${est.estudiante_id}`);
@@ -553,7 +563,8 @@ function cerrarModalAusencia() {
     modal.classList.add('hidden');
     // Revertir select si se cancela
     if (_selectAusenciaActual) {
-      _selectAusenciaActual.value = _estadoAnteriorAusencia;
+      const prevRadio = document.querySelector(`input[name="${_selectAusenciaActual.name}"][value="${_estadoAnteriorAusencia}"]`);
+      if(prevRadio) prevRadio.checked = true;
       actualizarContadores();
     }
     _selectAusenciaActual = null;
@@ -616,8 +627,10 @@ function confirmarAusencia() {
 // ── Marcar Todos ─────────────────────────────────────────────────────────────
 function marcarTodos(estado) {
   document.querySelectorAll('.asist-estado').forEach(sel => {
-    sel.value = estado;
-    sel.dataset.previousValue = estado;
+    if (sel.value === estado) {
+      sel.checked = true;
+      sel.dataset.previousValue = estado;
+    }
   });
   actualizarContadores();
 }
@@ -625,21 +638,13 @@ function marcarTodos(estado) {
 // ── Contadores y Estilos ──────────────────────────────────────────────────────
 function actualizarContadores() {
   let p = 0, a = 0, r = 0, j = 0;
-  document.querySelectorAll('.asist-estado').forEach(sel => {
+  document.querySelectorAll('.asist-estado:checked').forEach(sel => {
     switch(sel.value) {
       case 'PRESENTE': p++; break;
       case 'AUSENTE': a++; break;
       case 'RETARDO': r++; break;
       case 'JUSTIFICADO': j++; break;
     }
-    
-    // Aplicar clases de color según el estado
-    sel.className = `asist-estado w-full rounded-lg py-2 px-3 text-xs font-bold focus:outline-none transition-all text-center cursor-pointer shadow-sm border ${
-      sel.value === 'PRESENTE' ? 'bg-[#E6F4EA] text-[#137333] border-[#CEEAD6]' :
-      sel.value === 'AUSENTE' ? 'bg-[#FCE8E6] text-[#C5221F] border-[#FAD2CF]' :
-      sel.value === 'RETARDO' ? 'bg-[#FEF7E0] text-[#B06000] border-[#FDE293]' :
-      'bg-[#E8F0FE] text-[#1967D2] border-[#D2E3FC]'
-    }`;
   });
   
   // Animar números si cambian
@@ -661,7 +666,8 @@ async function guardarAsistencia(btn) {
 
   const registros = [];
   _estudiantes.forEach(est => {
-    const estado = document.querySelector(`select[data-est="${est.estudiante_id}"]`).value;
+    const estadoRadio = document.querySelector(`input[name="estado_${est.estudiante_id}"]:checked`);
+    const estado = estadoRadio ? estadoRadio.value : 'PRESENTE';
     const hora = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="hora"]`).value;
     const obs = document.querySelector(`input[data-est="${est.estudiante_id}"][data-field="obs"]`).value;
     registros.push({

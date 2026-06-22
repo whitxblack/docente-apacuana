@@ -175,19 +175,25 @@ def subir_material():
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             safe_name = f"{timestamp}_{filename}"
 
-            if os.environ.get('VERCEL'):
-                # Modo Cloud (Vercel): Guardar en Supabase Storage
+            if os.environ.get('VERCEL') or os.environ.get('CLOUDINARY_URL'):
+                # Modo Cloud: Guardar en Cloudinary
                 try:
-                    from db import supabase_admin
-                    file_bytes = archivo.read()
-                    res = supabase_admin.storage.from_("materiales").upload(
-                        path=safe_name,
-                        file=file_bytes,
-                        file_options={"content-type": archivo.content_type}
+                    import cloudinary
+                    import cloudinary.uploader
+                    
+                    # La configuración se toma automáticamente de la variable de entorno CLOUDINARY_URL
+                    cloudinary.config(secure=True)
+                    
+                    # Para PDFs, Excels, Word etc, debemos usar resource_type='raw'
+                    res = cloudinary.uploader.upload(
+                        archivo,
+                        resource_type="raw",
+                        public_id=f"materiales/{safe_name}",
+                        use_filename=True
                     )
-                    file_path = supabase_admin.storage.from_("materiales").get_public_url(safe_name)
-                except Exception as ex_supa:
-                    return jsonify({'success': False, 'message': f'Fallo al subir a Supabase Storage: {str(ex_supa)}. Asegúrate de crear el bucket "materiales" público.'}), 500
+                    file_path = res.get('secure_url')
+                except Exception as ex_cloud:
+                    return jsonify({'success': False, 'message': f'Fallo al subir a Cloudinary: {str(ex_cloud)}. Asegúrate de configurar CLOUDINARY_URL en .env o Vercel.'}), 500
             else:
                 # Modo Local: Guardar en el disco
                 upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'materiales')

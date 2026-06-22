@@ -45,9 +45,9 @@ if not SUPABASE_ANON_KEY:
         "[db.py] Falta SUPABASE_ANON_KEY en el archivo .env."
     )
 if not SUPABASE_SERVICE_ROLE_KEY:
-    raise ValueError(
-        "[db.py] Falta SUPABASE_SERVICE_ROLE_KEY en el archivo .env."
-    )
+    print("[db.py] ADVERTENCIA: Falta SUPABASE_SERVICE_ROLE_KEY. supabase_admin usará la ANON_KEY como fallback.")
+    SUPABASE_SERVICE_ROLE_KEY = SUPABASE_ANON_KEY
+
 # ── Clientes Supabase ─────────────────────────────────────────────────────────
 
 # Cliente estándar: respeta las Row Level Security (RLS) policies de Supabase.

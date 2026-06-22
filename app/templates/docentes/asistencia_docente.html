@@ -424,9 +424,12 @@ async function cargarAsistencia() {
   document.getElementById('titulo-tabla').textContent = matNombre;
   document.getElementById('sub-tabla').textContent = `Año ${_anoGrado} - Sección "${_seccion}"`;
 
-  // Setear fecha de hoy por defecto
+  // Setear fecha de hoy por defecto y restringir limites
   const hoy = new Date().toISOString().split('T')[0];
-  document.getElementById('fecha-asistencia').value = hoy;
+  const inputFecha = document.getElementById('fecha-asistencia');
+  inputFecha.value = hoy;
+  inputFecha.min = hoy;
+  inputFecha.max = hoy;
 
   // Cargar estudiantes
   const r = await fetch(`/docente/api/estudiantes/?periodo_id=${_periodoId}&ano_grado=${_anoGrado}&seccion=${_seccion}&asignatura_id=${_asignaturaId}`);
@@ -523,8 +526,16 @@ function renderTablaAsistencia() {
 
 // ── Cargar registros existentes para una fecha ───────────────────────────────
 async function cargarRegistrosFecha() {
-  const fecha = document.getElementById('fecha-asistencia').value;
+  const inputFecha = document.getElementById('fecha-asistencia');
+  const fecha = inputFecha.value;
   if (!fecha || !_asignaturaId) return;
+
+  const hoy = new Date().toISOString().split('T')[0];
+  if (fecha !== hoy) {
+    toast('No puedes registrar ni modificar asistencia en días anteriores o futuros.', false);
+    inputFecha.value = hoy;
+    return;
+  }
 
   const r = await fetch(`/docente/api/asistencia/obtener/?asignatura_id=${_asignaturaId}&periodo_id=${_periodoId}&seccion=${_seccion}&fecha=${fecha}`);
   const d = await r.json();

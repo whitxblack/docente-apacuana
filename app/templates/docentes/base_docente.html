@@ -465,7 +465,7 @@
             <div class="w-10 h-10 flex items-center justify-center">
                 <img src="{{ url_for('static', filename='apacuana-logo.png') }}" alt="Apacuana" class="w-8 h-8 object-contain">
             </div>
-            <span class="font-headline font-extrabold text-lg text-text-main tracking-tight hidden sm:block shadow-text-contrast">Portal Docente</span>
+            <span class="font-headline font-extrabold text-lg text-text-main tracking-tight hidden sm:block">Portal Docente</span>
         </div>
 
         <!-- Navegación Principal (Escritorio) -->
@@ -495,8 +495,8 @@
                 <!-- Botón de Perfil Trigger -->
                 <button onclick="toggleProfileDropdown(event)" id="profile-dropdown-btn" class="flex items-center gap-3 pl-3 border-l border-border hover:opacity-80 transition-opacity focus:outline-none">
                     <div class="hidden sm:block text-right">
-                        <p class="font-bold text-sm text-text-main leading-tight shadow-text-contrast">{{ session.get('username', 'Docente') }}</p>
-                        <p class="text-xs text-text-muted shadow-text-contrast">Administrador</p>
+                        <p class="font-bold text-sm text-text-main leading-tight">{{ session.get('username', 'Docente') }}</p>
+                        <p class="text-xs text-text-muted">Administrador</p>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-surface-element border border-border flex items-center justify-center overflow-hidden">
                         {% if session.get('foto_perfil') %}

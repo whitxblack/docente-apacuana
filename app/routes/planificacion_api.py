@@ -211,9 +211,12 @@ def subir_material():
             else:
                 cloudinary.config(secure=True)
             
+            ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+            res_type = "image" if ext == "pdf" else "raw"
+
             res = cloudinary.uploader.upload(
                 archivo,
-                resource_type="auto",
+                resource_type=res_type,
                 public_id=f"materiales/{safe_name}",
                 use_filename=True
             )

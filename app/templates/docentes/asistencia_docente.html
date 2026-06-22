@@ -528,7 +528,7 @@ async function cargarRegistrosFecha() {
         ampmSpan.textContent = reg && reg.ampm ? reg.ampm : '';
       }
     }
-    if (obsEl) obsEl.value = reg ? reg.observacion : '';
+    if (obsEl) obsEl.value = (reg && reg.observacion && reg.observacion !== "null") ? reg.observacion : '';
   });
   actualizarContadores();
 }

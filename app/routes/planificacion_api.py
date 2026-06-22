@@ -213,7 +213,7 @@ def subir_material():
             
             res = cloudinary.uploader.upload(
                 archivo,
-                resource_type="raw",
+                resource_type="auto",
                 public_id=f"materiales/{safe_name}",
                 use_filename=True
             )

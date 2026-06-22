@@ -32,6 +32,16 @@ def init_models():
     global PerfilDocente, TemaClase, MaterialApoyo, TareaDocente, PeriodoCierre
     global RegistroAsistencia, AsistenciaGeneral
     
+    # Intentar alterar el tipo de columna de 'archivo' a VARCHAR(500) en PostgreSQL para admitir URLs largas de Cloudinary
+    try:
+        with db.engine.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE docentes_materialapoyo ALTER COLUMN archivo TYPE VARCHAR(500);"))
+            conn.commit()
+    except Exception as e:
+        # Silenciar si es SQLite o si ya se había alterado
+        pass
+
     reflect_database()
     
     # Mapeo a las tablas generadas por Django

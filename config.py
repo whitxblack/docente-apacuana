@@ -6,6 +6,13 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
+# Sanitizar CLOUDINARY_URL para eliminar prefijos y comillas que causan fallos en la librería cloudinary
+cloudinary_url = os.environ.get('CLOUDINARY_URL', '').replace('"', '').replace("'", "").strip()
+if 'CLOUDINARY_URL=' in cloudinary_url:
+    cloudinary_url = cloudinary_url.split('CLOUDINARY_URL=', 1)[1].strip()
+if cloudinary_url:
+    os.environ['CLOUDINARY_URL'] = cloudinary_url
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'flask-insecure-key')
     
